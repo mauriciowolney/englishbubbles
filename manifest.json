@@ -13,8 +13,8 @@
     "minimal-ui"
   ],
   "orientation": "any",
-  "background_color": "#eae9fb",
-  "theme_color": "#e4f3fb",
+  "background_color": "#141964",
+  "theme_color": "#141964",
   "categories": [
     "education",
     "games"

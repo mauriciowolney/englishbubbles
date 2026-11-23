@@ -31,6 +31,24 @@
       root.dataset.theme = c[3] ? "dark" : "light";
     }
   } catch (e) {}
+  // The phone's bars (theme-color) follow the background: its top colour --bg-a, set here or later by the page's own
+  // colour picker (menu or game: both write --bg-a on <html>). No colour chosen: the default light / dark ones.
+  try {
+    var html = document.documentElement, last = "";
+    var bar = function () {
+      var a = html.style.getPropertyValue("--bg-a").trim(), m = document.querySelectorAll('meta[name="theme-color"]');
+      for (var i = 0; i < m.length; i++) {
+        var v = a || (/dark/.test(m[i].media) ? "#141964" : "#e4f3fb");
+        if (m[i].content !== v) m[i].content = v;
+      }
+      last = a;
+    };
+    bar();
+    document.addEventListener("DOMContentLoaded", bar);
+    new MutationObserver(function () {
+      if (html.style.getPropertyValue("--bg-a").trim() !== last) bar();
+    }).observe(html, { attributes: true, attributeFilter: ["style"] });
+  } catch (e) {}
 })();
 
 /* iPhone / iPad: ask for a "playback" audio session, so the game's sounds play even with Silent mode on (iOS 17+;
