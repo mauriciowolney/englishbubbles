@@ -1,0 +1,16 @@
+# Read by Netlify (other hosts ignore this file). The service worker and the menu must never be cached by the
+# browser for long, or phones would miss updates.
+/sw.js
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/manifest.json
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+# Recorded-voice clips: their names are fingerprints of what they say, so they never change: keep them for a year.
+/games/*.ogg
+  Content-Type: audio/ogg
+  Cache-Control: public, max-age=31536000, immutable
+/games/*.mp3
+  Content-Type: audio/mpeg
+  Cache-Control: public, max-age=31536000, immutable

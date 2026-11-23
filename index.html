@@ -1,0 +1,1945 @@
+<!doctype html>
+<html lang="en" data-lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>English Bubbles</title>
+<meta name="description" content="English practice games for Brazilian learners: grammar, vocabulary and pronunciation, one bubble at a time. Works offline.">
+<meta name="theme-color" content="#e4f3fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141964" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="English Bubbles">
+<link rel="manifest" href="manifest.json?v=6d0cce7c">
+<link rel="icon" href="icons/favicon-32.png?v=6d0cce7c" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-64.png?v=6d0cce7c" sizes="64x64" type="image/png">
+<link rel="icon" href="icons/icon-192.png?v=6d0cce7c" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6d0cce7c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+<script>
+/* early-theme.js — runs in <head>, before the first paint, in the menu AND in every game: puts on the background
+   colour saved in eb-bg (the games' palettes, "p:sky" or "c:#7aa7ff"), so a page never flashes its default colour
+   first. The page's own 01-theme.js applies the same colour again a moment later. Keep PAL in step with PALETTES
+   (src/js/01-theme.js and the games). */
+(function () {
+  try {
+    var PAL = {
+      sky: ["#e4f3fb", "#f1e8fb", "#fdf0e6", 0], peach: ["#ffe6d8", "#ffd6e4", "#fff1c9", 0],
+      mint: ["#d9f4e6", "#d3eef6", "#eef6d3", 0], lilac: ["#e9e0fb", "#f7d9ee", "#dbe6fb", 0],
+      dusk: ["#2a1740", "#58224f", "#1f3560", 1], midnight: ["#141964", "#441464", "#144e64", 1]
+    };
+    var s = Storage.prototype.getItem.call(window.localStorage, "eb-bg") || "", c = null;
+    if (s.indexOf("p:") === 0) c = PAL[s.slice(2)] || null;
+    else if (/^c:#[0-9a-f]{6}$/i.test(s)) {
+      var hex = s.slice(2), r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255,
+        b = parseInt(hex.slice(5, 7), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b),
+        l = (mx + mn) / 2, h = 0, sat = 0, d = mx - mn;
+      if (d) {
+        sat = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+        h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+      }
+      var col = function (dh) { return "hsl(" + ((h + dh + 360) % 360).toFixed(0) + "," + (sat * 100).toFixed(0) + "%," + (l * 100).toFixed(0) + "%)"; };
+      c = [col(0), col(40), col(-40), l * 100 < 52];
+    }
+    if (c) {
+      var root = document.documentElement;
+      root.style.setProperty("--bg-a", c[0]); root.style.setProperty("--bg-b", c[1]); root.style.setProperty("--bg-c", c[2]);
+      root.dataset.theme = c[3] ? "dark" : "light";
+    }
+  } catch (e) {}
+})();
+
+/* Coming back from a game (Back, or the game's Games button): the menu shows at once, without its entrance animation. */
+(function () {
+  // One language at a time (EN / PT switch, 10-menu.js menuLang): set before the first paint. Saved as eb-lang;
+  // until chosen, Portuguese for My level All / A1 / A2 and English from B1 up.
+  try {
+    var lang = localStorage.getItem("eb-lang"), lv = localStorage.getItem("eb-level");
+    if (lang !== "en" && lang !== "pt") lang = lv === "B1" || lv === "B2+" ? "en" : "pt";
+    document.documentElement.setAttribute("data-lang", lang);
+  } catch (e) {}
+  try {
+    var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+    if ((nav && nav.type === "back_forward") || sessionStorage.getItem("eb-back")) document.documentElement.classList.add("back");
+    // Loading: nothing shows but the background until the font is ready (eb-wait), then the header slides in
+    // (eb-arrive) and, when it lands, everything else fades in (10-dock.css, 10-menu.js startArrival).
+    document.documentElement.classList.add("eb-arrive", "eb-wait");
+    // Coming back from a game always lands at the top of the menu (the header slide is smoothest there): the
+    // browser must not restore the old scroll position.
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    sessionStorage.removeItem("eb-back");
+  } catch (e) {}
+})();
+</script>
+<style>
+/* 00-base.css — tokens (the same as the games': sky / lilac / peach background, navy ink, glass), page, the
+   drifting background bubbles, the glass bubble look (.glass), focus and reduced motion. */
+:root {
+  --bg-a: #e4f3fb; --bg-b: #f1e8fb; --bg-c: #fdf0e6;
+  --ink: #26385c;
+  --ink-soft: rgba(38,56,92,.68);
+  --fill-hi: rgba(255,255,255,.95);
+  --fill-mid: rgba(255,255,255,.5);
+  --fill-lo: rgba(255,255,255,.2);
+  --gloss: rgba(255,255,255,.95);
+  --underline: #e0558a;
+  --pt: #c2417a;
+  --rim-l: 74%; --glow-l: 82%; --lab-l: 38%;
+  /* background bubbles (--sky-*) and soap bubbles (--soap-*, --film-a, --srim-*, --sglow-*, --spot-plus, --rimhi-*, --faceg-*):
+     the same numbers as Be, Do or Modal's 00-base.css (2026-11-22) */
+  --sky-o: .85; --sky-rim-l: 68%; --sky-rim-a: .38; --sky-glow-l: 74%; --sky-glow-a: .2; --sky-hi: .7; --sky-tint-a: .07; --soap-hi: .3; --soap-gl: 1; --spot-plus: 1; --rimhi-l: 56%; --rimhi-a: .85; --faceg-l: 66%; --faceg-a: .18; --soap-lo: .06; --film-a: .18; --srim-l: 70%; --srim-a: .7; --sglow-l: 78%; --sglow-a: .34; --soap-sh: rgba(60,70,140,.07); --soap-sh2: rgba(60,70,140,.12);
+  --shadow: rgba(60,70,140,.16);
+  --dock-bg: rgba(255,255,255,.62);
+  --dock-line: rgba(38,56,92,.14);
+  --card-bg: rgba(255,255,255,.55);
+  --modal-bg: rgba(255,255,255,.96);
+  --radius: 28px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-a: #141964; --bg-b: #441464; --bg-c: #144e64;
+    --ink: #eaf1ff; --ink-soft: rgba(234,241,255,.7);
+    --fill-hi: rgba(255,255,255,.16); --fill-mid: rgba(255,255,255,.07); --fill-lo: rgba(255,255,255,.03);
+    --gloss: rgba(255,255,255,.55);
+    --underline: #ffb3d1; --pt: #ffa3c8;
+    --rim-l: 68%; --glow-l: 62%; --lab-l: 78%;
+    --sky-o: .6; --sky-rim-l: 68%; --sky-rim-a: .35; --sky-glow-l: 62%; --sky-glow-a: .22; --sky-hi: .55; --sky-tint-a: .06; --soap-hi: .22; --soap-gl: .5; --spot-plus: .39; --rimhi-l: 88%; --rimhi-a: .75; --faceg-l: 74%; --faceg-a: .13; --soap-lo: .03; --film-a: .24; --srim-l: 72%; --srim-a: .85; --sglow-l: 66%; --sglow-a: .4; --soap-sh: rgba(0,0,0,.22); --soap-sh2: rgba(0,0,0,.32);
+    --shadow: rgba(0,0,0,.45);
+    --dock-bg: rgba(12,16,44,.55);
+    --dock-line: rgba(255,255,255,.16);
+    --card-bg: rgba(255,255,255,.06);
+    --modal-bg: rgba(18,22,56,.98);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #eaf1ff; --ink-soft: rgba(234,241,255,.7);
+  --fill-hi: rgba(255,255,255,.16); --fill-mid: rgba(255,255,255,.07); --fill-lo: rgba(255,255,255,.03);
+  --gloss: rgba(255,255,255,.55);
+  --underline: #ffb3d1; --pt: #ffa3c8;
+  --rim-l: 68%; --glow-l: 62%; --lab-l: 78%;
+  --sky-o: .6; --sky-rim-l: 68%; --sky-rim-a: .35; --sky-glow-l: 62%; --sky-glow-a: .22; --sky-hi: .55; --sky-tint-a: .06; --soap-hi: .22; --soap-gl: .5; --spot-plus: .39; --rimhi-l: 88%; --rimhi-a: .75; --faceg-l: 74%; --faceg-a: .13; --soap-lo: .03; --film-a: .24; --srim-l: 72%; --srim-a: .85; --sglow-l: 66%; --sglow-a: .4; --soap-sh: rgba(0,0,0,.22); --soap-sh2: rgba(0,0,0,.32);
+  --shadow: rgba(0,0,0,.45);
+  --dock-bg: rgba(12,16,44,.55);
+  --dock-line: rgba(255,255,255,.16);
+  --card-bg: rgba(255,255,255,.06);
+  --modal-bg: rgba(18,22,56,.98);
+  color-scheme: dark;
+}
+:root[data-theme="dark"]:not([style*="--bg-a"]) { --bg-a: #141964; --bg-b: #441464; --bg-c: #144e64; }
+
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+/* A soft cross-fade between the menu and the games (Chrome; other browsers just switch). The games opt in too
+   (src/inject/game-head.html). */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .25s; animation-timing-function: ease-out; }
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100%;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background-color: var(--bg-a);
+  background-image:
+    radial-gradient(60vmax 50vmax at 8% 6%, var(--bg-a), transparent 70%),
+    radial-gradient(55vmax 45vmax at 95% 40%, var(--bg-b), transparent 70%),
+    radial-gradient(60vmax 50vmax at 30% 100%, var(--bg-c), transparent 70%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: "Fredoka", "Nunito", ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  transition: background-color .4s;             /* as in the games */
+}
+.theming *, .theming *::before, .theming *::after { transition: none !important; }
+.bgfade { position: fixed; inset: 0; z-index: -1; pointer-events: none; background-color: var(--fa);
+  background-image: radial-gradient(60vmax 50vmax at 8% 6%, var(--fa), transparent 70%),
+    radial-gradient(55vmax 45vmax at 95% 40%, var(--fb), transparent 70%),
+    radial-gradient(60vmax 50vmax at 30% 100%, var(--fc), transparent 70%);
+  transition: opacity .55s ease; }
+.bgfade.go { opacity: 0; }
+
+button, a { font-family: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--underline); outline-offset: 3px; border-radius: 12px; }
+[hidden] { display: none !important; }
+/* One language at a time: every line with a Portuguese version is written twice (.l-en and .l-pt, side by side) and
+   html[data-lang] hides one. Set in <head> before the first paint; the EN / PT switch is in 10-menu.js. */
+[data-lang="en"] .l-pt, [data-lang="pt"] .l-en { display: none !important; }
+
+/* A glass bubble, as in the games: see-through fill, coloured rim (--h = hue), inner glow and gloss */
+.glass {
+  --h: 220;
+  position: relative;
+  border: 1.5px solid hsla(var(--h), 75%, var(--rim-l), .75);
+  background: radial-gradient(120% 140% at 22% 14%, var(--fill-hi), var(--fill-mid) 48%, var(--fill-lo) 100%);
+  box-shadow:
+    inset 0 0 16px hsla(var(--h), 95%, var(--glow-l), .38),
+    inset -5px -7px 14px hsla(calc(var(--h) + 70), 95%, var(--glow-l), .28),
+    0 7px 16px var(--shadow);
+}
+.glass::before {
+  content: ""; position: absolute; left: 11%; top: 9%; width: 26%; height: 20%; max-height: 22px;
+  border-radius: 50%; background: radial-gradient(closest-side, var(--gloss), transparent);
+  transform: rotate(-14deg); opacity: .8; pointer-events: none;
+}
+
+/* The bubbles drifting up behind everything: exactly as in Be, Do or Modal (../bedomodal/src/css/00-base.css and
+   06-sky.js, 2026-11-22; the user wants them identical): 7 see-through, softly blurred bubbles, 40-140 px, 95-145 s a
+   climb, already part-way up at load (negative delays) while the layer fades in (.sky.in). Per theme (--sky-*): on
+   light backgrounds a stronger rim and glow and a tint of the colour inside, on dark ones fainter (layer at 60%).
+   Sizes use lvh (the screen's height with the address bar hidden), not vh / inset: on Android the address bar hides
+   and shows while scrolling, which changed vh mid-flight and made every bubble jump (vh is the fallback). Only
+   transform and opacity animate. Made in 10-menu.js (sky). */
+.sky { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
+.sky.in { opacity: var(--sky-o); }
+.sky span {
+  position: absolute; bottom: -120px; border-radius: 50%;
+  border: 1.5px solid hsla(var(--h), 80%, var(--sky-rim-l), var(--sky-rim-a));
+  background: radial-gradient(circle at 30% 26%, rgba(255,255,255,var(--sky-hi)), hsla(var(--h), 90%, 78%, var(--sky-tint-a)) 50%, hsla(var(--h), 90%, 72%, calc(var(--sky-tint-a) * .8)) 70%, transparent 71%);
+  box-shadow: inset 0 0 14px hsla(var(--h), 95%, var(--sky-glow-l), var(--sky-glow-a));
+  filter: blur(2px);   /* soft, out of focus: blurred once, then only moved */
+  animation: drift var(--t, 30s) linear infinite; animation-delay: var(--d, 0s);
+  opacity: 0;
+}
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  8% { opacity: .6; }
+  50% { transform: translate3d(var(--x, 20px), -60vh, 0); transform: translate3d(var(--x, 20px), -60lvh, 0); }
+  92% { opacity: .45; }
+  100% { transform: translate3d(0, -125vh, 0); transform: translate3d(0, -125lvh, 0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .sky { display: none; }
+}
+
+/* 10-dock.css — the top of the page: only the app's name, big (2026-11-17, the user's choice: twice the old size, no
+   logo, no buttons; it scrolls away with the page). The round buttons (volume, background colour, Help) now share
+   the bar above the game list with "My level" and EN / PT (20-hero.css .ctrlbar). Also here: the "My level"
+   segmented control with the games' level colours, the gradient pill buttons (Install, Update, Got it), the
+   swatches and the volume pop-up. The element keeps the class "dock": the menu's slide-in waits for it. */
+.dock {
+  position: relative; z-index: 20;
+  display: flex; justify-content: center; align-items: center;
+  width: max-content; max-width: calc(100% - 24px);
+  margin: calc(env(safe-area-inset-top, 0px) + 22px) auto 0;
+}
+.brand { display: inline-flex; align-items: center; text-decoration: none; border-radius: 18px; }
+.brand-name { font-size: 2.64rem; font-weight: 500; line-height: 1.1; letter-spacing: .005em; white-space: nowrap; }
+/* "Bubbles": each letter wears one level's own gradient (the same two colours as that level's pill; 2026-11-17, the
+   user: solid colours per letter looked too much like Google's logo), letters in level order A1 A2 B1 B2+ All A1 A2.
+   Light backgrounds get slightly deeper shades so every letter stays readable. */
+.brand-name b { font-weight: 600;
+  --a1: #f29a12; --a1b: #ee6a26; --a2: #23bf88; --a2b: #1ba3b8; --b1: #4a7fe8; --b1b: #5f55f5;
+  --b2: #d9447f; --b2b: #a63fc6; --all: #7f75f2; --allb: #5d53f0; }
+.brand-name i { font-style: normal; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(160deg, var(--g1), var(--g2)); }
+.brand-name .c-a1 { --g1: var(--a1); --g2: var(--a1b); } .brand-name .c-a2 { --g1: var(--a2); --g2: var(--a2b); }
+.brand-name .c-b1 { --g1: var(--b1); --g2: var(--b1b); } .brand-name .c-b2 { --g1: var(--b2); --g2: var(--b2b); }
+.brand-name .c-all { --g1: var(--all); --g2: var(--allb); }
+:root[data-theme="dark"] .brand-name b { --a1: #f9a826; --a1b: #f47b3a; --a2: #3fcf9a; --a2b: #2bb5c9; --b1: #5b8def; --b1b: #6c63ff;
+  --b2: #e0558a; --b2b: #b44fd1; --all: #8f86f7; --allb: #6c63ff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-name b { --a1: #f9a826; --a1b: #f47b3a; --a2: #3fcf9a; --a2b: #2bb5c9; --b1: #5b8def; --b1b: #6c63ff;
+    --b2: #e0558a; --b2b: #b44fd1; --all: #8f86f7; --allb: #6c63ff; }
+}
+.brand:focus-visible { outline: 2px solid var(--underline); outline-offset: 4px; }
+
+.seg { display: inline-flex; align-items: center; gap: 2px; }
+.seg-cap { font-size: .78rem; font-weight: 500; color: var(--ink-soft); padding: 0 6px 0 8px; white-space: nowrap; }
+.seg.level { position: relative; isolation: isolate; padding: 2px; border-radius: 999px; border: 1px solid var(--dock-line); background: rgba(255,255,255,.18); flex-wrap: nowrap; }
+.seg.level button {
+  appearance: none; border: 0; background: transparent; color: var(--ink);
+  font-size: .82rem; font-weight: 600; letter-spacing: .04em;
+  padding: .5em .72em; border-radius: 999px; min-height: 34px;
+  transition: color .3s ease, background-color .2s ease;
+}
+/* The sliding pill under the chosen level, copied from Be, Do or Modal (../bedomodal/src/css/10-dock.css and
+   js/40-focus.js placeInd): it takes the chosen level's gradient (--lv, --lv2 on its button), and hovering a level
+   tints it with its own colour. Placed by placeLevelPill() in 10-menu.js. */
+.seg.level button[aria-pressed="true"] { background: transparent; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .2); }
+.seg.level button:hover { background: color-mix(in srgb, var(--lv) 22%, transparent); }
+.seg-ind { position: absolute; z-index: -1; top: 0; left: 0; width: 0; height: 0; border-radius: 999px; background: var(--ink); pointer-events: none; opacity: 0; }
+.seg-ind.ready { opacity: 1; transition: transform .45s cubic-bezier(.34,1.4,.64,1), width .45s cubic-bezier(.34,1.4,.64,1), background-color .3s ease, --lv .45s ease, --lv2 .45s ease; }
+.seg.level .seg-ind { background: linear-gradient(135deg, var(--lv, var(--ink)), var(--lv2, var(--ink))); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 3px 10px var(--shadow); }
+.seg.level button[data-l="any"] { font-weight: 500; letter-spacing: .01em; }
+
+.dock-btns { display: inline-flex; align-items: center; gap: 6px; }
+.iconbtn {
+  appearance: none; display: inline-grid; place-items: center;
+  width: 38px; height: 38px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--dock-line); background: rgba(255,255,255,.3); color: var(--ink);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .2s ease;
+}
+@media (hover: hover) and (pointer: fine) { .iconbtn:hover { background: rgba(255,255,255,.6); transform: translateY(-1px); } }
+.iconbtn:active { transform: scale(.92); }
+.pill {
+  appearance: none; display: inline-flex; align-items: center; gap: 6px;
+  height: 38px; padding: 0 14px 0 11px; border-radius: 999px; border: 0;
+  font-size: .9rem; font-weight: 600; letter-spacing: .01em; color: #fff;
+  background: linear-gradient(135deg, #6c8dff, #b46cf0 60%, #f0679f);
+  box-shadow: 0 3px 9px rgba(150,90,220,.22), inset 0 1px 0 rgba(255,255,255,.4);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease;
+}
+@media (hover: hover) and (pointer: fine) { .pill:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(150,90,220,.3), inset 0 1px 0 rgba(255,255,255,.4); } }
+.pill:active { transform: scale(.95); }
+
+/* The header slides down in from the top when a page arrives (html.eb-arrive, set in <head>, removed when the slide
+   ends). It is the real header that moves, not a view-transition snapshot: a snapshot can't show the frosted-glass
+   blur (a flat bar showed on PC) and was choppy on Android. The blur is off only while it moves (it is the costly
+   part); it returns when the slide ends. */
+@media (prefers-reduced-motion: no-preference) {
+  html.eb-arrive .dock { animation: eb-dock-in .48s cubic-bezier(.22,1,.36,1) both; will-change: transform, opacity;
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@keyframes eb-dock-in { from { transform: translateY(calc(-100% - 28px)); opacity: 0; } }
+/* (menu) The load, in order: 1. only the background shows while the font loads (html.eb-wait: the header waits above
+   the screen); 2. the header slides down (html.eb-arrive); 3. when it lands, everything else fades in, in place
+   (main and the footer are hidden during 1 and 2). Nothing moves after it appears. */
+html.eb-wait .dock { animation-play-state: paused; }
+main, .foot { transition: opacity .5s ease; }
+html.eb-arrive main, html.eb-arrive .foot { opacity: 0; }
+html.frozen main, html.frozen .foot { transition: none; }
+/* Opening a game: the whole menu fades away to its background (which is the game's background too), then the game
+   arrives. Done with .veil, a screen-sized layer painted with the background that fades IN on top of everything:
+   fading the menu itself made the browser repaint all of it and the fade started ~0.2 s late. Set by launch() in
+   10-menu.js (html.eb-leaving), undone instantly on pageshow. */
+.veil {
+  position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: 100; pointer-events: none;
+  opacity: 0; will-change: opacity; transition: opacity .22s ease-out;
+  background-color: var(--bg-a);
+  background-image:
+    radial-gradient(60vmax 50vmax at 8% 6%, var(--bg-a), transparent 70%),
+    radial-gradient(55vmax 45vmax at 95% 40%, var(--bg-b), transparent 70%),
+    radial-gradient(60vmax 50vmax at 30% 100%, var(--bg-c), transparent 70%);
+}
+html.eb-leaving .veil { opacity: 1; }
+html.frozen .veil { transition: none; }
+
+/* Background swatches, colour picker and volume: copied from the games (../conjunction practice/src/css/00-base.css). */
+/* Swatches: the circles are spaced by margins, not the gap, so the picker row adds nothing to the pop-over's width */
+.sw { display: flex; align-items: center; gap: 8px 0; padding: 0 4px; }
+.sw > button + button { margin-left: 8px; }
+.sw button {
+  position: relative; display: block; flex: none;
+  width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.9); cursor: pointer;
+  box-shadow: 0 1px 5px var(--shadow);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease;
+}
+.sw button:hover { transform: scale(1.12); }
+.sw .on { box-shadow: 0 0 0 2px var(--dock-bg), 0 0 0 4px var(--ink); }
+.sw .swc { background: conic-gradient(#ff7aa8, #ffd36b, #7be0a4, #6bc7ff, #b08cff, #ff7aa8); }
+.ctrlbar button:focus-visible { outline: 2px solid var(--underline); outline-offset: 3px; }
+/* The colour picker (01-theme.js; copied from Be, Do or Modal's 10-dock.css, 2026-11-22): a full-width row under the
+   swatches while picking. Tracks are pills of their own gradient (hue: the rainbow; strength: grey to the hue; light:
+   dark to light), the handle a white disc ringed in the colour being made. */
+.cpick { contain: inline-size; min-width: 0; display: none; flex: 1 0 100%;   /* contain: it takes the swatch row's width and never widens the pop-over */
+  flex-direction: column; gap: 12px; padding: 12px 0 4px; margin-top: 4px; border-top: 1px solid var(--dock-line); }
+.swwrap.open.picking .cpick { display: flex; }
+.cpick { --cp-h: 220; --cp-s: 100%; --cp-l: 74%; --cp-c: hsl(var(--cp-h), var(--cp-s), var(--cp-l)); }
+.cp-top { display: flex; align-items: center; gap: 10px; }
+.cp-hex { flex: 1; min-width: 0; font: 500 .95rem "Fredoka", "Nunito", ui-rounded, "Trebuchet MS", system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); background: transparent;
+  border: 1px solid var(--dock-line); border-radius: 999px; padding: .45em .9em; outline: none; }
+.cp-hex:focus-visible { border-color: var(--underline); box-shadow: 0 0 0 3px hsla(335,80%,65%,.2); }
+.cp-r { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 14px; margin: 4px 0; border-radius: 999px; cursor: pointer;
+  background: var(--cp-track); box-shadow: inset 0 0 0 1px var(--dock-line); outline: none; touch-action: none; }
+.cp-h { --cp-track: linear-gradient(90deg, hsl(0,85%,62%), hsl(60,85%,62%), hsl(120,85%,62%), hsl(180,85%,62%), hsl(240,85%,62%), hsl(300,85%,62%), hsl(359,85%,62%)); }
+.cp-s { --cp-track: linear-gradient(90deg, hsl(var(--cp-h), 0%, var(--cp-l)), hsl(var(--cp-h), 100%, var(--cp-l))); }
+.cp-l { --cp-track: linear-gradient(90deg, hsl(var(--cp-h), var(--cp-s), 8%), hsl(var(--cp-h), var(--cp-s), 50%), hsl(var(--cp-h), var(--cp-s), 92%)); }
+.cp-r::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 4px solid var(--cp-c); box-shadow: 0 2px 6px var(--shadow); transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+.cp-r::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 4px solid var(--cp-c); box-shadow: 0 2px 6px var(--shadow); }
+.cp-r::-moz-range-track { background: transparent; }
+.cp-r:hover::-webkit-slider-thumb, .cp-r:active::-webkit-slider-thumb { transform: scale(1.15); }
+.cp-r:focus-visible { box-shadow: inset 0 0 0 1px var(--dock-line), 0 0 0 3px hsla(335,80%,65%,.25); }
+@media (max-width: 600px) {
+  .sw { width: 100%; justify-content: center; padding: 0; }
+  .sw > button + button { margin-left: clamp(4px, 1.6vw, 8px); }
+}
+@media (max-width: 380px) {
+  .sw button { width: 28px; height: 28px; }
+}
+.swwrap { position: relative; padding: 0 4px; }
+.swbtn { display: block; width: 27px; height: 27px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.9); cursor: pointer; background: conic-gradient(#ff7aa8, #ffd36b, #7be0a4, #6bc7ff, #b08cff, #ff7aa8); box-shadow: 0 1px 5px var(--shadow); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.swbtn:hover, .swwrap.open .swbtn { transform: scale(1.12) rotate(40deg); }
+.swwrap .sw { position: absolute; top: calc(100% + 12px); right: 0; z-index: 30; width: max-content; max-width: calc(100vw - 32px); flex-wrap: wrap; justify-content: center; padding: 10px 14px; border-radius: 24px; background: var(--bg-a); border: 1px solid var(--dock-line); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); box-shadow: 0 10px 26px var(--shadow); opacity: 0; visibility: hidden; transform: translateY(-6px) scale(.96); transform-origin: top right; transition: opacity .2s ease, transform .25s cubic-bezier(.34,1.56,.64,1), visibility 0s linear .25s; }
+.swwrap .sw::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }
+.swwrap.open .sw { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+@media (hover: hover) { .swwrap:hover .sw { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; } }
+@media (max-width: 600px) {
+  .swwrap { position: static; }
+  .swwrap .sw { left: 12px; right: 12px; width: auto; max-width: none; transform-origin: top center; }
+}
+#snd svg { display: block; }
+/* Volume */
+.volwrap { position: relative; display: flex; flex: 1 1 auto; justify-content: center; }
+.volp { position: absolute; top: calc(100% + 10px); left: 50%; z-index: 30; display: flex; align-items: center; padding: 10px 16px; border-radius: 24px; background: var(--bg-a); border: 1px solid var(--dock-line); box-shadow: 0 10px 26px var(--shadow); opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(-6px) scale(.5, .8); transform-origin: top center; transition: opacity .2s ease, transform .25s cubic-bezier(.34,1.56,.64,1), visibility 0s linear .25s; }
+.volp::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+.volp input { width: 140px; margin: 0; cursor: pointer; accent-color: hsl(300,70%,58%); }
+.volwrap.open .volp { opacity: 1; visibility: visible; transform: translateX(-50%); transition-delay: 0s; }
+@media (hover: hover) { .volwrap:hover .volp { opacity: 1; visibility: visible; transform: translateX(-50%); transition-delay: 0s; } }
+/* (menu) the volume button is one of the round dock buttons; the button-group wrapper keeps the pop-ups anchored */
+.volwrap { flex: none; }
+#snd { color: var(--ink); }
+#snd svg { width: 22px; height: 22px; }
+/* (menu) the colour button matches the round 38 px dock buttons next to it (the games' 27 px looked too small here) */
+.swbtn { width: 36px; height: 36px; }
+.swwrap { padding: 0 1px; }
+@keyframes popin { from { opacity: 0; transform: translateY(-6px) scale(.94); } }
+
+/* Phones: the name still on one line (checked at 375, 360 and 320 px) */
+@media (max-width: 560px) {
+  .dock { margin-top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  .brand-name { font-size: 2.4rem; }
+  .seg.level button { padding: .45em .6em; font-size: .78rem; }
+}
+@media (max-width: 370px) { .brand-name { font-size: 2.1rem; } }
+@media (max-width: 345px) {          /* the smallest phones (320 px) */
+  .brand-name { font-size: 1.95rem; }
+}
+
+/* 20-hero.css — the welcome area: greeting, the lead line (English or Portuguese), the Continue and
+   Install buttons, and three big floating glass bubbles on the side; then the filters: "My level", the EN / PT
+   switch and the category tabs. */
+main { width: min(1120px, 100%); margin: 0 auto; padding: 0 18px 24px; }
+
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px;
+  padding: 34px 6px 10px;
+}
+.hero h1 {
+  margin: 0; font-size: clamp(2rem, 4.2vw + 1rem, 3.3rem); font-weight: 600; line-height: 1.05; letter-spacing: -.01em;
+}
+.lead { margin: 14px 0 0; max-width: 34em; font-size: 1.06rem; color: var(--ink); text-wrap: balance; }   /* no last word alone on a line */
+
+
+/* Continue and Install, side by side (each shows only when it applies; the row takes no room when both are hidden) */
+.hero-go { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; }
+.hero-go > * { margin-top: 18px; }
+.hero-go .pill { height: 44px; padding: 0 18px 0 14px; font-size: .95rem; }
+
+/* Continue looked like the practice chips (2026-11-17; the chips were removed 2026-11-22): one line, "Continue" then
+   the game's name, the game's colour only on the small dot and the play arrow. */
+.hero-go > .continue { margin-top: 8px; }
+.continue {
+  --h: 220;
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 6px 10px 6px 8px; border-radius: 999px; text-decoration: none; color: var(--ink);
+  background: var(--card-bg); border: 1px solid var(--dock-line);
+  font-size: .88rem; font-weight: 500; box-shadow: 0 3px 10px var(--shadow);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease, border-color .4s ease;
+}
+@media (hover: hover) and (pointer: fine) { .continue:hover { transform: translateY(-2px); border-color: hsla(var(--h), 75%, var(--rim-l), .9); } }
+.continue:active { transform: scale(.97); }
+.continue-dot { width: 18px; height: 18px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 32% 28%, #fff, hsl(var(--h), 90%, 78%) 45%, hsl(var(--h), 70%, 58%));
+  box-shadow: 0 2px 5px hsla(var(--h), 70%, 40%, .22); }
+.continue-txt { display: inline-flex; gap: .3em; min-width: 0; white-space: nowrap; }
+.continue-txt small { font-size: inherit; color: var(--ink-soft); font-weight: 500; }
+.continue-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.continue svg { flex: none; width: 16px; height: 16px; color: hsl(var(--h), 70%, var(--lab-l)); }
+
+/* the three big hero bubbles */
+.hero-art { position: relative; width: 300px; height: 230px; }
+/* The soap look (2026-11-22, from Be, Do or Modal's 40-bubbles.css "Soap bubbles"; the same tokens --soap-* etc. in
+   00-base.css): almost clear, a faint film of colour inside and a coloured rim, both turning once in 10 s (the
+   bubble's colour leads, about half of each turn), a shine spot top left and a small streak bottom right; as the mouse
+   nears, the spot leans toward it and brightens and the side facing it glows (15-shine.js). Built from spans (in
+   index.html), each drawn once: the film and the rim turn by rotating a still conic gradient (.spin), and what
+   follows the mouse moves by transform / opacity only. Paint order, bottom to top: the film (.spin, the white sheen
+   ::before, the glow facing the mouse .fg, the inner glow ::after), the shine spot, the rim, the small spot, the word.
+   Round bubbles here, so the spots are placed in % of the bubble (the game's are in em, for its pill-shaped bubbles). */
+.hb {
+  --th: var(--h);
+  position: absolute; display: grid; place-items: center; border-radius: 50%;
+  font-weight: 600; letter-spacing: .01em; color: hsl(var(--h), 60%, var(--lab-l));
+  border: 1.5px solid transparent;
+  box-shadow: 0 10px 22px var(--soap-sh);
+  animation: bob 6s ease-in-out infinite;
+}
+.hb .wl { position: relative; }   /* above the shine */
+.hb .film { position: absolute; inset: -1.5px; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.hb .film::before { content: ""; position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,var(--soap-hi)), rgba(255,255,255,var(--soap-lo)) 60%, transparent); }
+.hb .film::after { content: ""; position: absolute; inset: 1.5px; z-index: 3; border-radius: inherit; box-shadow: inset 0 0 22px hsla(var(--th), 95%, var(--sglow-l), var(--sglow-a)); }
+/* the turning colour: a square as wide as the bubble, centred (a circle never shows its corners); rotating it is the
+   same picture as turning the conic gradient's start */
+.hb .spin { position: absolute; left: 50%; top: 50%; width: 104%; aspect-ratio: 1; translate: -50% -50%; animation: spin 10s linear infinite; }
+.hb .film .spin { background: conic-gradient(from var(--ang), hsla(var(--th), 95%, 76%, var(--film-a)) 0 30%, hsla(calc(var(--th) + 90), 95%, 80%, calc(var(--film-a) * .6)) 50%, hsla(calc(var(--th) + 200), 90%, 82%, calc(var(--film-a) * .7)) 72%, hsla(var(--th), 95%, 76%, var(--film-a)) 92%); }
+.hb .rim .spin { background: conic-gradient(from var(--ang), hsla(var(--th), 90%, var(--srim-l), var(--srim-a)) 0 30%, hsla(calc(var(--th) + 90), 90%, calc(var(--srim-l) + 4%), calc(var(--srim-a) * .64)) 50%, hsla(calc(var(--th) + 200), 85%, calc(var(--srim-l) + 8%), calc(var(--srim-a) * .56)) 72%, hsla(var(--th), 90%, var(--srim-l), var(--srim-a)) 92%); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hb .fg > i, .hb .rh > i, .hb .spot i, .hb .glint > i { position: absolute; inset: 0; }
+.hb .fg { position: absolute; left: -10%; top: -45%; width: 120%; height: 190%; z-index: 2; opacity: 0; will-change: transform, opacity; }
+.hb .fg > i { background: radial-gradient(closest-side, hsla(var(--th), 100%, var(--faceg-l), var(--faceg-a)), transparent); }
+.hb .spot { position: absolute; left: 17%; top: 15%; width: 25%; height: 20%; pointer-events: none; transform: rotate(-14deg); will-change: transform; }
+.hb .spot > i:first-child { background: radial-gradient(closest-side, rgba(255,255,255,var(--soap-gl)) 32%, rgba(255,255,255,calc(var(--soap-gl) * .55)) 62%, rgba(255,255,255,0)); }
+.hb .spot .pl { opacity: 0; }
+.hb .spot .pl i { background: radial-gradient(closest-side, rgba(255,255,255,calc(var(--spot-plus) * .85)), rgba(255,255,255,var(--spot-plus)) 42%, rgba(255,255,255,calc(var(--spot-plus) * .55)) 52%, rgba(255,255,255,calc(var(--spot-plus) * .33)) 62%, rgba(255,255,255,calc(var(--spot-plus) * .12)) 81%, rgba(255,255,255,0)); }
+/* the small streak lying along the bottom-right curve, just inside the rim */
+.hb .glint { position: absolute; right: 11.5%; bottom: 14%; width: 13%; height: 6%; pointer-events: none; opacity: .8; transform: rotate(-45deg); will-change: transform, opacity; }
+.hb .glint > i { background: radial-gradient(closest-side, rgba(255,255,255,calc(var(--soap-gl) * .75)) 45%, rgba(255,255,255,0)); }
+.hb .rim { position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.hb .rim .rh { position: absolute; left: -5%; top: -40%; width: 110%; height: 180%; opacity: 0; will-change: transform, opacity; }
+.hb .rh > i { background: radial-gradient(closest-side, hsla(var(--th), 100%, var(--rimhi-l), var(--rimhi-a)), transparent); }
+/* the turning pauses off screen (.still, 15-shine.js) and during the header's slide; touch screens: the film doesn't
+   turn (as in the game), each bubble keeps its own angle (--ang) */
+.hero-art.still .hb, .hero-art.still .spin, html.eb-arrive .hb .spin { animation-play-state: paused; }
+@media (hover: none) { .hb .spin { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hb .spin { animation: none; } }
+.hb1 { --h: 215; width: 150px; height: 150px; left: 18px; top: 34px; font-size: 1.6rem; }
+.hb2 { --h: 330; width: 104px; height: 104px; right: 6px; top: 0; font-size: 1.3rem; animation-delay: -2s; animation-duration: 7s; }
+.hb3 { --h: 150; width: 96px; height: 96px; right: 26px; bottom: 0; font-size: 1rem; animation-delay: -4s; animation-duration: 6.5s; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-12px) rotate(2deg); } }
+
+/* The iPhone Silent-mode tip (20-pwa.js): a glass card under the welcome area */
+.tip {
+  display: flex; align-items: center; gap: 14px; margin: 22px 0 0; padding: 14px 14px 14px 16px; border-radius: 22px;
+  background: var(--card-bg); border: 1.5px solid hsla(30, 85%, var(--rim-l), .8);
+  box-shadow: inset 0 0 18px hsla(30, 95%, var(--glow-l), .35), 0 8px 20px var(--shadow);
+  animation: rise .5s cubic-bezier(.2,.8,.3,1) both; transition: opacity .25s ease, transform .25s ease;
+}
+.tip.bye { opacity: 0; transform: scale(.97); }
+.tip-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #fff;
+  background: linear-gradient(135deg, #f9a826, #f47b3a); box-shadow: 0 3px 9px rgba(244,123,58,.22); }
+.tip p { margin: 0; flex: 1; font-size: .95rem; line-height: 1.35; }
+.tip .pill { flex: none; padding: 0 16px; }
+@media (max-width: 560px) {
+  .tip { flex-wrap: wrap; }
+  .tip p { flex-basis: calc(100% - 60px); }
+  .tip .pill { margin-left: auto; }
+}
+
+/* The bar above the list (2026-11-17, the user's layout): ONE frosted bar with "My level" (the games' sliding pill,
+   10-dock.css), the EN / PT switch and the round buttons (volume, background colour, Help; they used to be in the
+   header); the category tabs right below it. Always ONE ROW, phones included (the user's rule). On a PC the bar is
+   exactly as long as the row of category tabs under it (.filters is one grid column, fit-content: both take the
+   wider one's width) and the level picker stretches to fill it (its buttons share the extra room). On phones the bar
+   is the screen's width and everything shrinks a little ("My level" hides; checked at 375, 360 and 320 px). The bar
+   is positioned, so the colour and volume pop-ups open under it, over the tabs. */
+.filters { display: grid; grid-template-columns: fit-content(100%); gap: 12px; margin: 26px 0 6px; padding: 0 2px; }
+.ctrlbar {
+  position: relative; z-index: 15;
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;
+  min-width: 0; padding: 6px 8px 6px 6px; border-radius: 28px;
+  background: var(--dock-bg); border: 1px solid var(--dock-line);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 6px 18px var(--shadow);
+}
+.ctrlbar .seg.level { flex: 1 1 auto; min-width: 0; }
+.ctrlbar .seg.level button { flex: 1 1 0; }   /* equal widths: "All" (lighter, narrower letters) got squashed into an oval */
+.ctrl-end { flex: none; display: flex; align-items: center; gap: 12px; }
+.ctrlbar .tour-lang { background: rgba(255,255,255,.18); }
+.ctrlbar .tour-lang button { font-size: .78rem; min-height: 34px; padding: .5em .85em; }
+@media (max-width: 560px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .ctrlbar { gap: 6px; padding: 4px; border-radius: 24px; }
+  .ctrlbar .seg-cap { display: none; }
+  .ctrlbar .seg.level button { min-width: 0; padding: .3em .1em; font-size: .76rem; letter-spacing: .02em; min-height: 28px; }
+  .ctrl-end { gap: 4px; }
+  .ctrlbar .tour-lang button { padding: .3em .5em; font-size: .74rem; min-height: 28px; }   /* as tall as the level buttons */
+  .ctrlbar .dock-btns { gap: 3px; }
+  .ctrlbar .iconbtn { width: 32px; height: 32px; }
+  .ctrlbar .iconbtn svg, .ctrlbar #snd svg { width: 18px; height: 18px; }
+  .ctrlbar .swbtn { width: 30px; height: 30px; }
+}
+@media (max-width: 400px) {          /* most phones: a few pixels more for the level picker, so its pill stays round */
+  .ctrlbar { gap: 4px; }
+  .ctrlbar .dock-btns { gap: 2px; }
+  .ctrlbar .iconbtn { width: 30px; height: 30px; }
+  .ctrlbar .swbtn { width: 28px; height: 28px; }
+  .ctrlbar .tour-lang button { padding: .3em .42em; }
+}
+@media (max-width: 345px) {          /* 320 px phones */
+  main { padding-left: 12px; padding-right: 12px; }
+  .ctrlbar { gap: 4px; padding: 3px; }
+  .ctrlbar .seg.level button { font-size: .7rem; letter-spacing: 0; padding: .3em 0; min-height: 26px; }
+  .ctrlbar .tour-lang button { padding: .3em .3em; font-size: .7rem; min-height: 24px; }
+  .ctrlbar .iconbtn { width: 27px; height: 27px; }
+  .ctrlbar .iconbtn svg, .ctrlbar #snd svg { width: 16px; height: 16px; }
+  .ctrlbar .swbtn { width: 25px; height: 25px; }
+  .ctrlbar .seg.level button { min-height: 24px; }
+}
+
+/* Category tabs */
+.cats {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.cats button {
+  appearance: none; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px; min-height: 40px;
+  border: 1px solid var(--dock-line); background: var(--card-bg); color: var(--ink);
+  font-size: .95rem; font-weight: 500;
+  box-shadow: 0 3px 10px var(--shadow);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .2s ease, color .2s ease;
+}
+@media (hover: hover) and (pointer: fine) { .cats button:hover { transform: translateY(-2px); } }
+.cats button .n { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  font-size: .75rem; font-weight: 600; background: rgba(38,56,92,.08); }
+/* The chosen category pill and the chosen EN / PT take the chosen level's colours (--sel / --sel2, set on #cats and each .langsw by
+   placeLevelPill() in 10-menu.js; 2026-11-17, the user: they match the level picked). */
+/* Registered as colours, so they can FADE into the new level's colours (a gradient itself can't be animated). The
+   fade starts with the first level tap (html.sel-fade), so nothing fades while the page loads. The level pill's
+   --lv / --lv2 fade the same way (10-dock.css). */
+@property --sel { syntax: "<color>"; inherits: true; initial-value: #8f86f7; }
+@property --sel2 { syntax: "<color>"; inherits: true; initial-value: #6c63ff; }
+@property --lv { syntax: "<color>"; inherits: true; initial-value: #8f86f7; }
+@property --lv2 { syntax: "<color>"; inherits: true; initial-value: #6c63ff; }
+.sel-fade #cats, .sel-fade .langsw { transition: --sel .45s ease, --sel2 .45s ease; }
+.cats button[aria-pressed="true"], .tour-lang.langsw button[aria-pressed="true"] {
+  color: #fff; border-color: transparent; text-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+  background: linear-gradient(135deg, var(--sel), var(--sel2));
+  box-shadow: 0 3px 9px color-mix(in srgb, var(--sel2) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.cats button[aria-pressed="true"] .n { background: rgba(255,255,255,.25); }
+
+/* Phones: the "Hello! / Olá!" bubbles sit beside the greeting, in the same grid row, so the "Pick a game" line
+   always starts below both (they used to float over it on some phones). .hero-text's children join the .hero grid
+   (display: contents). */
+@media (max-width: 760px) {
+  .hero { grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 0; padding-top: 22px; }
+  .hero-text { display: contents; }
+  .hero h1 { grid-column: 1; grid-row: 1; align-self: center; }
+  .hero-art { grid-column: 2; grid-row: 1; align-self: center; position: relative; width: 116px; height: 86px; pointer-events: none; }
+  .lead, .hero-go { grid-column: 1 / -1; }
+  .hb1 { width: 64px; height: 64px; left: 0; top: 22px; font-size: .8rem; }
+  .hb2 { width: 50px; height: 50px; right: 0; top: 0; font-size: .7rem; }
+  .hb3 { display: none; }
+}
+@media (max-width: 560px) {
+  .cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cats button { justify-content: space-between; padding: 8px 10px 8px 14px; font-size: .9rem; }
+}
+@media (max-width: 340px) {
+  .hero-art { display: none; }
+}
+
+/* 30-cards.css — the game cards: a glass card in the game's colour (--h), its words floating as bubbles on top
+   (like the games' own bubbles), a round Play button, title, English + Portuguese lines, level chips, "New" and
+   "Played today". Also the section headings (Grammar / Vocabulary / Pronunciation) and the pop on launch. */
+.sec { margin-top: 22px; }
+.sec-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 4px 12px; }
+.sec-h h2 { margin: 0; font-size: 1.35rem; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; }
+.sec-h h2 .sec-dot { width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #fff, hsl(var(--h), 85%, 72%) 50%, hsl(var(--h), 70%, 58%)); box-shadow: 0 2px 6px hsla(var(--h), 70%, 45%, .35); }
+.sec-h .sec-more { font-size: .85rem; color: var(--ink-soft); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 18px; }
+
+.card {
+  --h: 220;
+  position: relative; display: flex; flex-direction: column;
+  border-radius: var(--radius); overflow: hidden; text-decoration: none; color: var(--ink);
+  /* Cleaner (2026-11-22, the user, "like Word Families"): no border, the header's glass (--dock-bg, as Word Families'
+     zones, ../lexical families/src/css/10-game.css .zone) with only a hint of the card's colour: a faint inner glow
+     (--chint). The glass sits on a solid layer of the page's colour: the background bubbles used to show through the
+     card and their rings crossed the text. */
+  --chint: inset 0 0 22px hsla(var(--h), 95%, var(--glow-l), .16);
+  border: 0;
+  background: linear-gradient(var(--dock-bg), var(--dock-bg)), var(--bg-a);
+  box-shadow: var(--chint), 0 8px 22px var(--shadow);
+  transition: transform .32s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease, opacity .25s ease;
+  /* no entrance animation of their own: the whole page fades in after the header (10-dock.css) */
+  -webkit-user-select: none; user-select: none;
+}
+.card:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: var(--chint), 0 16px 30px var(--shadow), 0 0 0 3px hsla(var(--h), 85%, 62%, .55);   /* keyboard: a ring shows which card */
+}
+/* Hover lifts only with a real mouse: on touch screens the tapped card kept its "hover" when the phone restored the
+   menu, so it came back lifted and then settled. */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--chint), 0 16px 30px var(--shadow);   /* the lift and its shadow only: no rim */
+  }
+  }
+.card:focus-visible { outline: none; }
+.card:active { transform: translateY(-2px) scale(.985); }
+@keyframes rise { from { opacity: 0; transform: translateY(22px) scale(.97); } }
+.still .card, .back .card { animation: none; }
+.frozen .card, .frozen .fb, .frozen .card-go { transition: none !important; }   /* restored from page memory */
+/* While the header slides in (html.eb-arrive, 10-dock.css), the menu's other ~95 animations (word bubbles rising and
+   swaying, background and hero bubbles, the cards' entrance) wait: starting them all at once with the slide made it
+   stutter on phones. They start the moment the header lands. */
+html.eb-arrive .fbw, html.eb-arrive .fb, html.eb-arrive .sky span, html.eb-arrive .hb, html.eb-arrive .card { animation-play-state: paused; }
+/* Cards scrolled out of view (more than 120 px away) pause their word bubbles (10-menu.js cardWatch), so only the
+   2–3 cards on screen animate, whatever the number of games. */
+.card.offscreen .fbw, .card.offscreen .fb { animation-play-state: paused; }          /* coming back from a game: no entrance animation */
+
+.card-art {
+  position: relative; height: 136px; flex: none; overflow: hidden;
+  background:
+    radial-gradient(70% 90% at 15% 10%, rgba(255,255,255,.7), transparent 60%),
+    linear-gradient(135deg, hsla(var(--h), 95%, 82%, .75), hsla(calc(var(--h) + 22), 90%, 84%, .55));   /* no line under it (2026-11-22) */
+}
+:root[data-theme="dark"] .card-art { background: radial-gradient(70% 90% at 15% 10%, rgba(255,255,255,.12), transparent 60%), linear-gradient(135deg, hsla(var(--h), 70%, 45%, .5), hsla(calc(var(--h) + 22), 70%, 40%, .35)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .card-art { background: radial-gradient(70% 90% at 15% 10%, rgba(255,255,255,.12), transparent 60%), linear-gradient(135deg, hsla(var(--h), 70%, 45%, .5), hsla(calc(var(--h) + 22), 70%, 40%, .35)); }
+}
+
+/* No pane of glass over the bubble area (removed 2026-11-23, the user; a look-alike pane and a real backdrop-filter
+   were both tried 2026-11-22). Only each word bubble is softened (.fb filter below). Lighter letters on dark. */
+:root[data-theme="dark"] .card-art { --fbl: 88%; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .card-art { --fbl: 88%; }
+}
+
+/* The word bubbles: round glass bubbles (like the hero's) that rise endlessly from the bottom of the header to the
+   top, like the background bubbles. 10-menu.js cardHTML() gives each one a lane (--x), a size that fits its word
+   (--d), a start point in the cycle (--del) and a still position for reduced motion (--ry). All rise at the same
+   speed over the same distance (--T), so their spacing never changes and they never bump into each other.
+   .fbw rises; the .fb inside it sways a little from side to side. */
+.card-art { --art-h: 136px; --T: calc(var(--art-h) + 96px); height: var(--art-h); }
+.fbw {
+  --ds: 1;                       /* bubble scale: smaller in the two-column phone cards */
+  position: absolute; top: 100%; left: calc(var(--x) - var(--d) * var(--ds) / 2);
+  width: calc(var(--d) * var(--ds)); height: calc(var(--d) * var(--ds));
+  animation: wordrise 16s linear infinite; animation-delay: var(--del);   /* 16 s = CYCLE in 10-menu.js (was 12 s until 2026-11-22) */
+}
+@keyframes wordrise { to { transform: translateY(calc(-1 * var(--T))); } }
+.fb {
+  --bh: var(--h); --th: var(--bh); --bw: 1.5px;
+  position: relative; display: grid; place-items: center; width: 100%; height: 100%; padding: 6px;
+  border-radius: 50%; text-align: center; white-space: normal; overflow-wrap: normal;
+  font-size: .8rem; font-weight: 600; letter-spacing: .01em; line-height: 1.05;
+  color: hsl(var(--bh), 75%, var(--fbl, 32%)); font-weight: 700;   /* stronger letters, readable through the glass (2026-11-22) */
+  border: var(--bw) solid transparent;
+  box-shadow: 0 6px 14px var(--soap-sh);
+  animation: wordsway 3.4s ease-in-out infinite alternate; animation-delay: calc(var(--del) / 3);
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+}
+/* The soap look (2026-11-22, the user's request; Be, Do or Modal's soap bubbles, the same tokens --soap-* etc. as the
+   hero bubbles in 20-hero.css, but no reaction to the mouse): almost clear, a faint film of colour and a coloured rim,
+   both turning once in 10 s (not on touch screens, not off screen, not during the header's slide), a shine spot top
+   left (::before) and a small streak bottom right (::after). Paint order: the film, the spots, the rim, the word. */
+.fb .wl { position: relative; z-index: 1; }
+/* Each word bubble softened a little (2026-11-22, kept 2026-11-23 when the glass pane went; the user: the words
+   must stay readable). Like the background bubbles' blur: drawn once, then only moved (the sway and rise are
+   transforms); on touch screens nothing inside turns, so phones never redraw it. Phones a little less (smaller words). */
+.fb { filter: blur(.55px); }
+@media (max-width: 560px) { .fb { filter: blur(.35px); } }
+.fb .film { position: absolute; inset: calc(-1 * var(--bw)); border-radius: inherit; overflow: hidden; pointer-events: none; }
+.fb .film::before { content: ""; position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,var(--soap-hi)), rgba(255,255,255,var(--soap-lo)) 60%, transparent); }
+.fb .film::after { content: ""; position: absolute; inset: var(--bw); z-index: 2; border-radius: inherit; box-shadow: inset 0 0 12px hsla(var(--th), 95%, var(--sglow-l), var(--sglow-a)); }
+.fb .spin { position: absolute; left: 50%; top: 50%; width: 104%; aspect-ratio: 1; translate: -50% -50%; animation: spin 10s linear infinite; }
+.fb .film .spin { background: conic-gradient(from var(--ang), hsla(var(--th), 95%, 76%, var(--film-a)) 0 30%, hsla(calc(var(--th) + 90), 95%, 80%, calc(var(--film-a) * .6)) 50%, hsla(calc(var(--th) + 200), 90%, 82%, calc(var(--film-a) * .7)) 72%, hsla(var(--th), 95%, 76%, var(--film-a)) 92%); }
+.fb .rim .spin { background: conic-gradient(from var(--ang), hsla(var(--th), 90%, var(--srim-l), var(--srim-a)) 0 30%, hsla(calc(var(--th) + 90), 90%, calc(var(--srim-l) + 4%), calc(var(--srim-a) * .64)) 50%, hsla(calc(var(--th) + 200), 85%, calc(var(--srim-l) + 8%), calc(var(--srim-a) * .56)) 72%, hsla(var(--th), 90%, var(--srim-l), var(--srim-a)) 92%); }
+.fb .rim { position: absolute; inset: calc(-1 * var(--bw)); z-index: 1; border-radius: inherit; padding: var(--bw); pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.fb::before { content: ""; position: absolute; z-index: 1; left: 17%; top: 15%; width: 25%; height: 20%; border-radius: 50%; transform: rotate(-14deg); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255,255,255,var(--soap-gl)) 32%, rgba(255,255,255,calc(var(--soap-gl) * .55)) 62%, rgba(255,255,255,0)); }
+.fb::after { content: ""; position: absolute; z-index: 1; right: 11.5%; bottom: 14%; width: 13%; height: 6%; border-radius: 50%; transform: rotate(-45deg); opacity: .8; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255,255,255,calc(var(--soap-gl) * .75)) 45%, rgba(255,255,255,0)); }
+.card.offscreen .fb .spin, html.eb-arrive .fb .spin { animation-play-state: paused; }
+@media (hover: none) { .fb .spin { animation: none; } }
+@keyframes wordsway { from { transform: translateX(-5px); } to { transform: translateX(5px); } }
+/* Each card stays in its own colour family: its bubbles are shades close to the card's colour (they used to go up
+   to 90° round the colour wheel, five colours on one card; eight cards read as a rainbow). The Play button is the
+   card's one strong colour. */
+.fbw:nth-child(2) .fb { --bh: calc(var(--h) + 14); }
+.fbw:nth-child(3) .fb { --bh: calc(var(--h) - 14); }
+.fbw:nth-child(4) .fb { --bh: calc(var(--h) + 26); }
+.fbw:nth-child(5) .fb { --bh: calc(var(--h) - 26); }
+/* reduced motion: the bubbles stay still, spread over the header */
+@media (prefers-reduced-motion: reduce) {
+  .fbw { animation: none !important; top: var(--ry); }
+  .fb, .fb .spin { animation: none !important; }
+}
+
+.card-go {
+  position: absolute; right: 16px; top: 136px; translate: 0 -50%; z-index: 2;
+  display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 32% 26%, hsl(var(--h), 95%, 80%), hsl(var(--h), 75%, 60%) 55%, hsl(calc(var(--h) + 20), 70%, 50%));
+  border: 2px solid rgba(255,255,255,.85);
+  box-shadow: 0 3px 9px hsla(var(--h), 70%, 40%, .22), inset 0 1px 0 rgba(255,255,255,.5);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.card-go svg { margin-left: 3px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.15)); }
+.card:hover .card-go { transform: scale(1.1); }
+
+.card-body { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 16px; flex: 1; }
+.card-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding-right: 54px; margin: 0;
+  font-size: 1.28rem; font-weight: 600; line-height: 1.15; }
+/* the game's line: English or Portuguese, one at a time (.l-en / .l-pt, 00-base.css) */
+.card-desc { margin: 4px 0 0; font-size: .97rem; line-height: 1.35; text-wrap: pretty; }
+.card-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 12px; }
+
+/* The card's levels: one quiet label in the card's own colour ("A2 – B2+", 10-menu.js levelLabel), dark letters on
+   a soft tint. (There used to be one bright chip per level, white letters on four different gradients.) */
+.lv {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: .78rem; font-weight: 600; letter-spacing: .04em; color: var(--ink);
+  background: hsla(var(--h), 80%, var(--rim-l), .22);
+  border: 1px solid hsla(var(--h), 70%, var(--rim-l), .75);
+}
+.last { margin-left: auto; font-size: .8rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 4px; }
+
+.new {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px 3px 7px; border-radius: 999px; font-size: .72rem; font-weight: 600; letter-spacing: .04em; font-style: normal;
+  color: #fff; background: linear-gradient(135deg, #ff9a5a, #f0679f); box-shadow: 0 3px 9px rgba(240,103,159,.22);
+  animation: shine 2.4s ease-in-out infinite;
+}
+@keyframes shine { 50% { transform: scale(1.06); box-shadow: 0 4px 12px rgba(240,103,159,.3); } }
+
+/* tapping a card: its bubbles pop, then the game opens */
+.card.launching { transform: scale(.98); }
+.card.launching .fb { animation: none; transform: scale(1.5); opacity: 0; }
+.card.launching .card-go { transform: scale(1.25); }
+
+.empty { text-align: center; margin: 30px auto; max-width: 30em; color: var(--ink-soft); }
+.empty button { margin-top: 10px; }
+
+@media (max-width: 560px) {
+  main { padding: 0 14px 20px; }
+  /* TWO CARDS SIDE BY SIDE on phones (2026-11-17, the user: too much scrolling): a shorter header, smaller bubbles
+     (--ds), smaller letters. The bubbles' rise (--T) and scale were measured so they never touch (see CLAUDE.md). */
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .card { border-radius: 18px; }
+  .card-art { --art-h: 84px; --T: 170px; }
+  .fbw { --ds: .58; }
+  .fb { font-size: .56rem; padding: 3px; letter-spacing: 0; --bw: 1px; box-shadow: 0 3px 8px var(--soap-sh); }
+  .fb .film::after { box-shadow: inset 0 0 8px hsla(var(--th), 95%, var(--sglow-l), var(--sglow-a)); }
+  @keyframes wordsway { from { transform: translateX(-3px); } to { transform: translateX(3px); } }
+  .card-go { top: 84px; right: 8px; width: 34px; height: 34px; border-width: 1.5px; }
+  .card-go svg { width: 14px; height: 14px; margin-left: 2px; }
+  .card-body { padding: 10px 10px 10px; gap: 2px; }
+  .card-title { font-size: .98rem; padding-right: 30px; gap: 4px; }
+  .card-desc { font-size: .76rem; line-height: 1.3; margin-top: 2px; }
+  .card-foot { padding-top: 8px; gap: 4px; }
+  .lv { font-size: .66rem; padding: 2px 7px; letter-spacing: .02em; }
+  .last { font-size: .66rem; margin-left: 0; }
+  .new { font-size: .6rem; padding: 2px 6px 2px 5px; }
+  .sec { margin-top: 18px; }
+  .sec-h { margin-bottom: 8px; }
+}
+@media (max-width: 345px) {          /* 320 px phones: narrower cards, so a little smaller bubbles and a longer rise */
+  .card-art { --T: 190px; }
+  .fbw { --ds: .56; }
+  .card-title { font-size: .92rem; }
+  .card-desc { font-size: .72rem; }
+}
+
+/* 40-overlays.css — footer, the Help modal and the toast (update ready / offline / ready to use offline). */
+.foot { text-align: center; padding: 26px 18px calc(30px + env(safe-area-inset-bottom, 0px)); font-size: .9rem; color: var(--ink-soft); }
+.foot p { margin: 4px 0; }
+/* "Works offline" and "How to install" side by side, or one under the other on a narrow phone: each stays whole
+   (a "·" between them used to be left hanging at the end of the first line) */
+.foot-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 20px; }
+.foot-note { font-size: .85rem; text-wrap: balance; }
+.foot-by { font-size: .85rem; }
+.foot-by b { font-weight: 500; color: var(--ink); }
+.foot-ok::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #3fcf9a; vertical-align: 1px; box-shadow: 0 0 0 3px rgba(63,207,154,.2); }
+.foot-ok.wait::before { background: #f9a826; box-shadow: 0 0 0 3px rgba(249,168,38,.2); }
+.foot-ver { font-size: .78rem; opacity: .8; }
+.linkbtn { appearance: none; border: 0; background: none; padding: 2px 4px; font-size: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: var(--underline); text-underline-offset: 3px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: rgba(8,12,36,.62);   /* the games' tutorial dimming (2026-11-22); no blur here: a blurred layer behind the card would hide the page from the card's own frosted glass */
+  animation: fadein .2s ease;
+}
+/* While Help is open the page behind doesn't scroll (as in Be, Do or Modal's windows, 60-modals.css, 2026-11-22): the
+   wheel or a finger scrolls only the card. The page shows no scrollbar (50-scrollbar.css), so nothing shifts. */
+html:has(#help:not([hidden])) { overflow: hidden; overscroll-behavior: none; }
+@keyframes fadein { from { opacity: 0; } }
+.modal-card {
+  position: relative; width: min(680px, 100%); max-height: calc(100dvh - 32px); overflow: auto;
+  padding: 26px 24px 22px; border-radius: 28px;
+  background: var(--dock-bg); border: 1px solid var(--dock-line); box-shadow: 0 22px 50px rgba(0,0,0,.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);   /* the header's frosted glass, like the games' tutorial cards (2026-11-22) */
+  animation: popin .3s cubic-bezier(.34,1.56,.64,1);
+  overscroll-behavior: contain;
+}
+.modal-card h2 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.help-head { display: flex; align-items: center; gap: .8rem; margin: 0 44px 8px 0; }
+/* EN / PT switch: copied from the games' tutorial and Guide (../conjunction practice/src/css/10-game.css). It is
+   here in Help and beside "My level" in the page (20-hero.css .filters): both set the whole menu's language. */
+.tour-lang { display: flex; gap: 2px; padding: 2px; border-radius: 999px; border: 1px solid var(--dock-line); flex: none; }
+.tour-lang[hidden] { display: none; }
+.tour-lang button { appearance: none; border: 0; cursor: pointer; font-family: inherit; font-size: .7rem; font-weight: 600; letter-spacing: .06em; line-height: 1;
+  padding: .45em .75em; border-radius: 999px; color: var(--ink); background: transparent; transition: background-color .2s ease, color .2s ease; }
+.tour-lang button:hover { background: var(--dock-line); }
+.tour-lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg-a); }
+.tour-lang button:focus-visible { outline: 2px solid var(--underline); outline-offset: 2px; }
+.modal-card h3 { margin: 20px 0 8px; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.modal-card p { margin: 6px 0; line-height: 1.45; }
+.modal-x { position: absolute; right: 14px; top: 14px; }
+.hnum { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 8px; vertical-align: 1px; border-radius: 50%; font-size: .85rem; color: #fff;
+  background: linear-gradient(135deg, #6c8dff, #b46cf0); }
+.help-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.help-box { padding: 12px 14px; border-radius: 18px; background: rgba(127,140,200,.09); border: 1px solid var(--dock-line); }
+.help-box p { font-size: .93rem; }
+.key { display: inline-block; padding: 0 7px; border-radius: 8px; border: 1px solid var(--dock-line); background: rgba(255,255,255,.4); font-style: normal; font-weight: 500; font-size: .92em; white-space: nowrap; }
+@media (max-width: 560px) { .help-cols { grid-template-columns: 1fr; } .modal-card { padding: 22px 18px 18px; } }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+  translate: -50% 0; width: max-content; max-width: calc(100% - 28px);
+  display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 999px;
+  background: var(--modal-bg); border: 1px solid var(--dock-line); box-shadow: 0 14px 34px var(--shadow);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  font-size: .93rem; font-weight: 500;
+  animation: toastin .4s cubic-bezier(.34,1.56,.64,1);
+}
+.toast.plain { padding-right: 18px; }
+.toast .pill { height: 34px; padding: 0 14px; }
+@keyframes toastin { from { opacity: 0; transform: translateY(20px) scale(.95); } }
+
+/* 50-scrollbar: copied from Idiom Bubbles (../idiompractice/src/css/60-scrollbar.css, 2026-11-08), itself from ../bedomodal and ../vocabulary practice: in the cards
+   that scroll (Time's up results, Favorites / Seen, Practice, origin, language picker) a thin glossy pill with the
+   pink-to-purple gradient on a clear track; the page itself has none. Chrome / Edge / Safari use the ::-webkit-scrollbar
+   parts; Firefox only takes colours, so it gets a thin pink thumb (in @supports, since Chrome would let these override the pill). */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; margin: 18px 0; }
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent; border-radius: 999px; background-clip: padding-box;
+  background-image: linear-gradient(180deg, hsl(330,85%,66%), hsl(265,80%,64%));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+}
+::-webkit-scrollbar-thumb:hover { background-image: linear-gradient(180deg, hsl(330,90%,60%), hsl(265,85%,58%)); }
+::-webkit-scrollbar-thumb:active { border-width: 2px; }
+::-webkit-scrollbar-button, ::-webkit-scrollbar-corner { display: none; background: transparent; }
+@supports (-moz-appearance: none) {
+  * { scrollbar-width: thin; scrollbar-color: hsl(330,85%,66%) transparent; }
+}
+/* The page itself still scrolls on short screens, but shows no bar (only the cards and lists do). */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+
+</style>
+</head>
+<body>
+<div class="sky" id="sky" aria-hidden="true"></div>
+
+<!-- The top of the page: only the app's name (2026-11-17, the user's choice; the round buttons are in the bar
+     above the game list, and there's no logo here) -->
+<header class="dock" aria-label="English Bubbles">
+  <a class="brand" href="index.html" aria-label="English Bubbles, home">
+    <span class="brand-name">English <b><i class="c-a1">B</i><i class="c-a2">u</i><i class="c-b1">b</i><i class="c-b2">b</i><i class="c-all">l</i><i class="c-a1">e</i><i class="c-a2">s</i></b></span>
+  </a>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="greet">
+    <div class="hero-text">
+      <h1 id="greet">Hello!</h1>
+      <p class="lead" id="lead"><span class="l-en" lang="en">Pick a game and practise a little every day.</span><span class="l-pt" lang="pt-BR">Escolha um jogo e pratique um pouco todo dia.</span></p>
+      <div class="hero-go">
+        <a class="continue" id="continue" href="#" hidden>
+          <span class="continue-dot" aria-hidden="true"></span>
+          <span class="continue-txt"><small>Continue</small><b id="continue-title"></b></span>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+        </a>
+        <!-- shown only where the app can be installed and isn't yet (20-pwa.js) -->
+        <button type="button" class="pill" id="installbtn" hidden title="Install the app on this phone · Instalar o app">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span><span class="l-en" lang="en">Install the app</span><span class="l-pt" lang="pt-BR">Instalar o app</span></span>
+        </button>
+      </div>
+    </div>
+    <!-- the soap spans (film, shine spot, rim, small spot) as in Be, Do or Modal's SOAP (12-tray.js); look in 20-hero.css, shine in 15-shine.js -->
+    <div class="hero-art" aria-hidden="true">
+      <span class="hb hb1" style="--ang:20deg"><span class="film"><i class="spin"></i><i class="fg"><i></i></i></span><span class="spot"><i></i><i class="pl"><i></i></i></span><span class="rim"><i class="spin"></i><i class="rh"><i></i></i></span><span class="glint"><i></i></span><span class="wl">Hello!</span></span>
+      <span class="hb hb2" style="--ang:150deg"><span class="film"><i class="spin"></i><i class="fg"><i></i></i></span><span class="spot"><i></i><i class="pl"><i></i></i></span><span class="rim"><i class="spin"></i><i class="rh"><i></i></i></span><span class="glint"><i></i></span><span class="wl">Olá!</span></span>
+      <span class="hb hb3" style="--ang:260deg"><span class="film"><i class="spin"></i><i class="fg"><i></i></i></span><span class="spot"><i></i><i class="pl"><i></i></i></span><span class="rim"><i class="spin"></i><i class="rh"><i></i></i></span><span class="glint"><i></i></span><span class="wl">Let's go!</span></span>
+    </div>
+  </section>
+
+  <!-- iPhone / iPad only, until closed: websites can't detect Silent mode (20-pwa.js) -->
+  <div class="tip" id="iostip" role="note" hidden>
+    <span class="tip-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.7 3.9A6 6 0 0 1 18 9c0 3.3.7 5.4 1.5 6.7"/><path d="M6.2 6.4C6.1 7.2 6 8.1 6 9c0 4.5-1.4 6.9-2.3 8h12.6"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/><path d="m3 3 18 18"/></svg></span>
+    <p class="l-en" lang="en"><b>No sound?</b> Check that your iPhone isn't on Silent (the switch or Action button on its side).</p>
+    <p class="l-pt" lang="pt-BR"><b>Sem som?</b> Veja se o iPhone não está no modo silencioso (a chave ou o botão de Ação na lateral).</p>
+    <button type="button" class="pill" id="iostip-ok"><span class="l-en" lang="en">Got it</span><span class="l-pt" lang="pt-BR">Entendi</span></button>
+  </div>
+
+  <!-- One bar: My level, the menu's language (one at a time), volume, background colour, Help; the kinds of game
+       right below it -->
+  <div class="filters">
+    <div class="ctrlbar" role="toolbar" aria-label="Settings">
+      <div class="seg level" id="levelseg" role="group" aria-label="My level">
+        <span class="seg-ind" aria-hidden="true"></span>
+        <span class="seg-cap" aria-hidden="true">My level</span>
+      </div>
+      <div class="ctrl-end">
+        <div class="tour-lang langsw" role="group" aria-label="Language · Idioma"><button type="button" data-lang="en" lang="en" title="English">EN</button><button type="button" data-lang="pt" lang="pt-BR" title="Português">PT</button></div>
+        <span class="dock-btns">
+        <span class="volwrap" id="volwrap"><button type="button" class="iconbtn" id="snd" aria-pressed="true" aria-label="Volume" title="Volume"></button><span class="volp"><input type="range" id="vol" min="0" max="100" step="1" aria-label="Volume"></span></span>
+        <div class="swwrap" id="swwrap">
+          <button type="button" class="swbtn" id="swbtn" aria-label="Background color" aria-expanded="false" title="Background color"></button>
+          <div class="sw" id="swatches" role="group" aria-label="Background color"></div>
+        </div>
+        <button type="button" class="iconbtn" id="helpbtn" aria-label="Help" title="Help · Ajuda">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 3.9"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>
+        </button>
+        </span>
+      </div>
+    </div>
+    <nav class="cats" id="cats" aria-label="Kinds of game"></nav>
+  </div>
+  <div id="games" class="games"></div>
+  <p class="empty" id="empty" hidden></p>
+</main>
+
+<footer class="foot">
+  <p class="foot-row"><span class="foot-ok" id="offline-ok"><span class="l-en" lang="en">Works offline</span><span class="l-pt" lang="pt-BR">Funciona sem internet</span></span>
+     <button type="button" class="linkbtn" id="helplink"><span class="l-en" lang="en">How to install</span><span class="l-pt" lang="pt-BR">Como instalar</span></button></p>
+  <p class="foot-note"><span class="l-en" lang="en">No sign-up. Your progress is saved only on this device.</span><span class="l-pt" lang="pt-BR">Sem cadastro. Seu progresso fica salvo só neste aparelho.</span></p>
+  <p class="foot-by"><span class="l-en" lang="en">Made by <b>Maurício Wolney</b></span><span class="l-pt" lang="pt-BR">Feito por <b>Maurício Wolney</b></span></p>
+  <p class="foot-ver" id="version"></p>
+</footer>
+
+<div class="modal" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+  <div class="modal-card">
+    <button type="button" class="iconbtn modal-x" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <div class="help-head">
+      <h2 id="help-title"><span class="l-en" lang="en">Help</span><span class="l-pt" lang="pt-BR">Ajuda</span></h2>
+      <div class="tour-lang langsw" role="group" aria-label="Language · Idioma"><button type="button" data-lang="en" lang="en" title="English">EN</button><button type="button" data-lang="pt" lang="pt-BR" title="Português">PT</button></div>
+    </div>
+
+    <h3><span class="hnum">1</span><span class="l-en" lang="en">Install the app</span><span class="l-pt" lang="pt-BR">Instale o app</span></h3>
+    <div class="help-cols">
+      <div class="help-box">
+        <b>Android (Chrome)</b>
+        <p class="l-en" lang="en">Tap <span class="key">Install the app</span> on this page, or open Chrome's menu <span class="key">⋮</span> and choose <span class="key">Install app</span> or <span class="key">Add to Home screen</span>.</p>
+        <p class="l-pt" lang="pt-BR">Toque em <span class="key">Instalar o app</span> nesta página, ou abra o menu <span class="key">⋮</span> do Chrome e escolha <span class="key">Instalar app</span> ou <span class="key">Adicionar à tela inicial</span>.</p>
+      </div>
+      <div class="help-box">
+        <b>iPhone / iPad (Safari)</b>
+        <p class="l-en" lang="en">Tap the Share button <span class="key">⬆</span>, then <span class="key">Add to Home Screen</span>.</p>
+        <p class="l-pt" lang="pt-BR">Toque em Compartilhar <span class="key">⬆</span> e depois em <span class="key">Adicionar à Tela de Início</span>.</p>
+      </div>
+    </div>
+
+    <h3><span class="hnum">2</span><span class="l-en" lang="en">No internet? No problem</span><span class="l-pt" lang="pt-BR">Sem internet? Sem problema</span></h3>
+    <p class="l-en" lang="en">After the first visit, every game works offline.</p>
+    <p class="l-pt" lang="pt-BR">Depois da primeira visita, todos os jogos funcionam sem internet.</p>
+
+    <h3><span class="hnum">3</span><span class="l-en" lang="en">Listening</span><span class="l-pt" lang="pt-BR">Ouvir</span></h3>
+    <p class="l-en" lang="en">The games read English aloud with your phone's own voice. No sound? Turn the volume up, and check that an English voice is installed (Settings → Language → Text-to-speech). On an iPhone or iPad, also check that it isn't on Silent mode (the switch or Action button on its side).</p>
+    <p class="l-pt" lang="pt-BR">Os jogos leem em inglês com a voz do próprio celular. Sem som? Aumente o volume e veja se há uma voz em inglês instalada (Configurações → Idioma → Conversão de texto em voz). No iPhone ou iPad, veja também se ele não está no modo silencioso (a chave ou o botão de Ação na lateral).</p>
+
+    <h3><span class="hnum">4</span><span class="l-en" lang="en">Moving around</span><span class="l-pt" lang="pt-BR">Navegação</span></h3>
+    <p class="l-en" lang="en">In every game, the <span class="key">Games</span> button at the top (or your phone's Back) brings you back here. Your progress is saved on this phone.</p>
+    <p class="l-pt" lang="pt-BR">Em cada jogo, o botão <span class="key">Games</span> no topo (ou o Voltar do celular) traz você de volta para cá. Seu progresso fica salvo neste celular.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="veil" aria-hidden="true"></div>
+
+<script>const APP = {"name":"English Bubbles","version":"beb76963c8","built":"2026-11-23 14:55","games":[{"id":"verb-bubbles","title":"Be, Do or Modal?","category":"grammar","levels":["A1","A2"],"hue":337,"bubbles":["is","does","can","were","should"],"en":"Be, do and modals: drop the right word into the gap.","pt":"Be, do e modais: arraste a palavra certa para a lacuna.","added":"2026-11-08"},{"id":"pronouns","title":"Pronouns","category":"grammar","levels":["A1","A2"],"hue":188,"bubbles":["she","me","their","it","mine"],"en":"I, me, my or mine? Drag the right pronoun into the gap.","pt":"I, me, my ou mine? Arraste o pronome certo para a lacuna.","added":"2026-11-17"},{"id":"articles","title":"A, An or The?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":37,"bubbles":["a","an","the","an hour","the best","once a day","an idea"],"en":"A, an, the or nothing? Tap the gaps in short texts until they sound right.","pt":"A, an, the ou nada? Toque nas lacunas de textos curtos até soarem certo.","added":"2026-11-17"},{"id":"prepositions","title":"Prepositions","category":"grammar","levels":["A1","A2"],"hue":158,"bubbles":["in","on","at","for","to","by","from","of"],"en":"In, on, at, to, for: the prepositions Portuguese speakers mix up.","pt":"In, on, at, to, for: as preposições que mais confundem.","added":"2026-11-17"},{"id":"there-or-have","title":"There is or Have?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":220,"bubbles":["there is","has","there are","have","there was","there were","there will be","there shouldn't be"],"en":"There is or have? Drag the right words into the gap.","pt":"There is ou have? Arraste as palavras certas para a lacuna.","added":"2026-11-17"},{"id":"questions","title":"Wh- Questions","category":"grammar","levels":["A1","A2","B1"],"hue":287,"bubbles":["what","where","who","how many","why","when","which"],"en":"Build wh- questions word by word, then match them with their answers.","pt":"Monte perguntas com wh- palavra por palavra e ligue às respostas.","added":"2026-11-17"},{"id":"irregular-past","title":"Irregular Past","category":"grammar","levels":["A1","A2","B1"],"hue":21,"bubbles":["bought","saw","took","went","didn't go","didn't buy","didn't see","didn't take"],"en":"Pair irregular past verbs with their negatives, then fill short texts.","pt":"Ligue verbos irregulares no passado às negativas e complete textos.","added":"2026-11-17"},{"id":"comparatives","title":"Bigger, Better, Best","category":"grammar","levels":["A1","A2","B1+"],"hue":172,"bubbles":["bigger","more","the best","worse","tallest","the biggest","the most"],"en":"Comparatives and superlatives: tap each adjective to the right form.","pt":"Comparativos e superlativos: toque no adjetivo até a forma certa.","added":"2026-11-17"},{"id":"verb-wheel","title":"Verb Wheel","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":337,"bubbles":["I go","I went","I'll go","I've gone","I'd go","I should go","I used to go","I've been going"],"en":"Spin a verb through every tense, then use the right one in sentences.","pt":"Gire um verbo por todos os tempos e use o certo em frases.","added":"2026-11-17"},{"id":"present-perfect","title":"Perfect or Past?","category":"grammar","levels":["A2","B1","B2+"],"hue":228,"bubbles":["have been","already","yesterday","went","has","have gone","yet","ever"],"en":"Present perfect or past simple? Switch have / has on or off.","pt":"Present perfect ou past simple? Ligue ou desligue o have / has.","added":"2026-11-08"},{"id":"gerund-infinitive","title":"Doing or To Do?","category":"grammar","levels":["A2","B1","B2+"],"hue":30,"bubbles":["I love playing","I want to play","Learning is great","you have to go","you learn by doing","he needs to study"],"en":"To + verb or verb + -ing? Fix the verbs in short texts.","pt":"To + verbo ou verbo + -ing? Corrija os verbos em textos curtos.","added":"2026-11-08"},{"id":"conditionals","title":"Conditionals","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":158,"bubbles":["if","would","would have","had","will","If I were you"],"en":"Build if-sentences word by word, from zero to mixed conditionals.","pt":"Monte frases com if, palavra por palavra.","added":"2026-11-08"},{"id":"linking-words","title":"Linking Words","category":"grammar","levels":["A2","B1","B2+"],"hue":287,"bubbles":["but","however","so","although","because"],"en":"And, but, although, however: join ideas the natural way.","pt":"And, but, although, however: ligue ideias com naturalidade.","added":"2026-11-08"},{"id":"core-words","title":"Core Vocabulary","category":"vocabulary","levels":[],"hue":220,"bubbles":["know","often","enough","however","reach"],"en":"Test the most common English words you know, then practise the rest.","pt":"Teste as palavras mais comuns do inglês e pratique as que faltam.","added":"2026-11-17"},{"id":"false-friends","title":"False Friends","category":"vocabulary","levels":["A2","B1+"],"hue":337,"bubbles":["pretend","actually","push","parents","library"],"en":"Words that look like Portuguese but mean something else.","pt":"Palavras que parecem português, mas significam outra coisa.","added":"2026-11-17"},{"id":"phrasal-verbs","title":"Phrasal Verbs","category":"vocabulary","levels":["A2","B1+"],"hue":165,"bubbles":["give up","look after","turn off","run out","get on"],"en":"Make phrasal verbs, match their meanings, use them in sentences.","pt":"Forme phrasal verbs, ligue aos significados e use em frases.","added":"2026-11-08"},{"id":"word-families","title":"Word Families","category":"vocabulary","levels":["B1+"],"hue":30,"bubbles":["act","actor","action","active","actively"],"en":"Verb, noun, adjective, adverb: sort a word family, then fill the gaps.","pt":"Verbo, substantivo, adjetivo, advérbio: separe a família e complete.","added":"2026-11-17"},{"id":"idioms","title":"English Idioms","category":"vocabulary","levels":["B1","B2+"],"hue":250,"bubbles":["break the ice","piece of cake","spill the beans","on cloud nine"],"en":"Match idioms with their meanings, then put them in sentences.","pt":"Ligue expressões idiomáticas aos significados e complete frases.","added":"2026-11-08"},{"id":"stressed-syllables","title":"Stressed Syllables","category":"pronunciation","levels":[],"hue":287,"bubbles":["NAtion","reCORD","HOspital","MUsic","FAmily"],"en":"Words you already know, said with the right stress.","pt":"Palavras que você já conhece, com a sílaba tônica certa.","added":"2026-11-08"},{"id":"silent-letters","title":"Silent Letters","category":"pronunciation","levels":[],"hue":175,"bubbles":["know","climb","island","hour","listen"],"en":"Know, climb, island: find the letters English doesn't say.","pt":"Know, climb, island: encontre as letras que não se pronunciam.","added":"2026-11-17"}]};</script>
+<script>
+/* 00-util.js — small helpers shared by the menu's scripts: $, saved data (store / load never throw), esc, dates.
+   The menu's saved keys all start with "eb-"; each game's keys start with "eb:<game id>:" (src/inject/game-head.html). */
+"use strict";
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const canHover = !!(window.matchMedia && matchMedia("(hover: hover)").matches);   // used by 02-sound.js
+
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function loadJSON(k, fallback) {
+  try { const v = JSON.parse(load(k)); return v == null ? fallback : v; } catch (e) { return fallback; }
+}
+function storeJSON(k, v) { store(k, JSON.stringify(v)); }
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// One language at a time: both versions are written, and only the chosen one shows (html[data-lang], 00-base.css;
+// the EN / PT switch is in 10-menu.js). For text made here in the scripts; the page itself uses the same two spans.
+function both(en, pt) { return `<span class="l-en" lang="en">${en}</span><span class="l-pt" lang="pt-BR">${pt}</span>`; }
+
+// Dates as "YYYY-MM-DD" in the phone's own time zone
+function today() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function dayDiff(a, b) {           // whole days from date a to date b
+  const t = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((t(b) - t(a)) / 86400000);
+}
+
+/* 01-theme.js — background swatches, colour picker (since 2026-11-22 the in-app one from Be, Do or Modal) and the gradual colour change (the old background fades away on
+   top), copied from the games (../phrasal verbs practice/src/js/01-theme.js; only the saved key differs: eb-bg).
+   eb-bg is also the colour of every game in the app (src/inject/game-head.html). `root` comes from 00-util.js. */
+var PALETTES = [
+  { id: "auto", t: "Match my device", css: "linear-gradient(135deg,#e4f3fb 50%,#141964 50%)" },
+  { id: "sky", t: "Sky", c: ["#e4f3fb", "#f1e8fb", "#fdf0e6"], dark: 0 },
+  { id: "peach", t: "Peach", c: ["#ffe6d8", "#ffd6e4", "#fff1c9"], dark: 0 },
+  { id: "mint", t: "Mint", c: ["#d9f4e6", "#d3eef6", "#eef6d3"], dark: 0 },
+  { id: "lilac", t: "Lilac", c: ["#e9e0fb", "#f7d9ee", "#dbe6fb"], dark: 0 },
+  { id: "dusk", t: "Dusk", c: ["#2a1740", "#58224f", "#1f3560"], dark: 1 },
+  { id: "midnight", t: "Midnight", c: ["#141964", "#441464", "#144e64"], dark: 1 }
+];
+var swHost = document.getElementById("swatches");
+var customLabel, swwrap = document.getElementById("swwrap"), swbtn = document.getElementById("swbtn");
+
+function setBg(a, b, c, dark) {
+  root.style.setProperty("--bg-a", a);
+  root.style.setProperty("--bg-b", b);
+  root.style.setProperty("--bg-c", c);
+  root.dataset.theme = dark ? "dark" : "light";
+}
+function clearBg() {
+  ["--bg-a", "--bg-b", "--bg-c"].forEach(function (p) { root.style.removeProperty(p); });
+  delete root.dataset.theme;
+}
+// Change the theme in one step (no per-element transitions), then fade a copy of the old background away on top.
+var bgReady = false;
+function swapBg(fn, fade) {
+  var cs = getComputedStyle(root), old = ["--bg-a", "--bg-b", "--bg-c"].map(function (v) { return cs.getPropertyValue(v).trim(); });
+  root.classList.add("theming");
+  fn();
+  void document.body.offsetWidth;
+  root.classList.remove("theming");
+  if (!fade || !bgReady || reduceMotion) return;
+  var f = document.createElement("div");
+  f.className = "bgfade"; f.setAttribute("aria-hidden", "true");
+  f.style.setProperty("--fa", old[0]); f.style.setProperty("--fb", old[1]); f.style.setProperty("--fc", old[2]);
+  document.body.appendChild(f);
+  void f.offsetWidth; f.classList.add("go");
+  setTimeout(function () { f.remove(); }, 700);
+}
+function mark(el) {
+  swHost.querySelectorAll(".on").forEach(function (n) { n.classList.remove("on"); n.removeAttribute("aria-pressed"); });
+  if (el) { el.classList.add("on"); if (el.tagName === "BUTTON") el.setAttribute("aria-pressed", "true"); }
+}
+function hexToHsl(hex) {
+  var r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, s = 0, d = mx - mn;
+  if (d) {
+    s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s * 100, l * 100];
+}
+function applyCustom(hex, fade) {   // fade: the old background fades away, as for the palettes (not while sliding)
+  var v = hexToHsl(hex), h = v[0], s = v[1], l = v[2];
+  function col(dh) { return "hsl(" + ((h + dh + 360) % 360).toFixed(0) + "," + s.toFixed(0) + "%," + l.toFixed(0) + "%)"; }
+  swapBg(function () { setBg(col(0), col(40), col(-40), l < 52); }, !!fade);
+  customLabel.style.background = hex;
+  mark(customLabel);
+  store("eb-bg", "c:" + hex);
+}
+PALETTES.forEach(function (p) {
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.title = p.t;
+  btn.setAttribute("aria-label", "Background: " + p.t);
+  btn.style.background = p.css || "linear-gradient(135deg," + p.c.join(",") + ")";
+  btn.addEventListener("click", function () {
+    swapBg(function () { if (p.id === "auto") clearBg(); else setBg(p.c[0], p.c[1], p.c[2], p.dark); }, true);
+    mark(btn);
+    store("eb-bg", "p:" + p.id);
+  });
+  btn.dataset.id = p.id;
+  swHost.appendChild(btn);
+});
+/* Your own colour (2026-11-22, copied from Be, Do or Modal's 03-theme.js; it was the browser's own colour box): the
+   rainbow swatch opens a picker inside this pop-over: a colour-code field (the page itself is the preview), then hue /
+   strength / light sliders (styled in 10-dock.css), the background changing as you slide. It stays open while picking
+   (.picking) and closes with the rainbow swatch again, a click outside or Escape. */
+var curHex = "#7aa7ff", cpHtml =
+  '<div class="cp-top"><input class="cp-hex" type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Color code"></div>' +
+  '<input type="range" class="cp-r cp-h" min="0" max="359" step="1" aria-label="Color">' +
+  '<input type="range" class="cp-r cp-s" min="0" max="100" step="1" aria-label="Color strength">' +
+  '<input type="range" class="cp-r cp-l" min="8" max="92" step="1" aria-label="Light or dark">';
+customLabel = document.createElement("button"); customLabel.type = "button"; customLabel.className = "swc";
+customLabel.title = "Pick your own color"; customLabel.setAttribute("aria-label", "Pick your own background color"); customLabel.setAttribute("aria-expanded", "false");
+var cpick = document.createElement("div"); cpick.className = "cpick"; cpick.innerHTML = cpHtml;
+swHost.appendChild(customLabel); swHost.appendChild(cpick);
+var cpH = cpick.querySelector(".cp-h"), cpS = cpick.querySelector(".cp-s"), cpL = cpick.querySelector(".cp-l"), cpHex = cpick.querySelector(".cp-hex"), cpRaf = 0;
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+  var f = function (n) { var v = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return ("0" + Math.round(v * 255).toString(16)).slice(-2); };
+  return "#" + f(0) + f(8) + f(4);
+}
+// the sliders' tracks and handle ring follow the colour being made
+function cpPaint() {
+  cpick.style.setProperty("--cp-h", +cpH.value); cpick.style.setProperty("--cp-s", cpS.value + "%"); cpick.style.setProperty("--cp-l", cpL.value + "%");
+}
+function cpFromHex(hex) { var v = hexToHsl(hex); cpH.value = Math.round(v[0]); cpS.value = Math.round(v[1]); cpL.value = Math.round(v[2]); cpHex.value = hex; cpPaint(); }
+function cpSlide() {
+  curHex = hslToHex(+cpH.value, +cpS.value, +cpL.value); cpHex.value = curHex; cpPaint();
+  if (!cpRaf) cpRaf = requestAnimationFrame(function () { cpRaf = 0; applyCustom(curHex); });   // at most one background change a frame
+}
+[cpH, cpS, cpL].forEach(function (r) { r.addEventListener("input", cpSlide); });
+cpHex.addEventListener("input", function () {
+  var v = cpHex.value.trim(); if (v.charAt(0) !== "#") v = "#" + v;
+  if (/^#[0-9a-f]{6}$/i.test(v)) { curHex = v.toLowerCase(); var keep = cpHex.value; cpFromHex(curHex); cpHex.value = keep; applyCustom(curHex, true); }
+});
+cpHex.addEventListener("blur", function () { cpHex.value = curHex; });
+function closePicker() { swwrap.classList.remove("picking"); customLabel.setAttribute("aria-expanded", "false"); }
+customLabel.addEventListener("click", function () {
+  if (swwrap.classList.contains("picking")) { closePicker(); return; }
+  swOpen(true); swwrap.classList.add("picking"); customLabel.setAttribute("aria-expanded", "true");
+  cpFromHex(curHex); applyCustom(curHex, true);
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && swwrap.classList.contains("open")) swOpen(false); });
+
+// (menu) wrapped in a function: 10-menu.js calls it again when the phone restores the menu from its page memory
+// (Back from a game), so a colour picked inside a game shows here too.
+function applySavedBg() {
+  var savedBg = load("eb-bg");
+  if (savedBg && savedBg.indexOf("c:") === 0 && /^#[0-9a-f]{6}$/i.test(savedBg.slice(2))) {
+    curHex = savedBg.slice(2).toLowerCase(); applyCustom(curHex);
+  } else {
+    var pid = savedBg && savedBg.indexOf("p:") === 0 ? savedBg.slice(2) : "auto";
+    var pb = swHost.querySelector('[data-id="' + pid + '"]') || swHost.querySelector('[data-id="auto"]');
+    if (pb) pb.click();
+  }
+}
+applySavedBg();
+bgReady = true;
+function swOpen(o) { swwrap.classList.toggle("open", o); swbtn.setAttribute("aria-expanded", o); if (!o) closePicker(); }
+swbtn.addEventListener("click", function (e) { e.stopPropagation(); swOpen(!swwrap.classList.contains("open")); });
+document.addEventListener("click", function (e) { if (!swwrap.contains(e.target)) swOpen(false); });
+
+/* 02-sound.js — synthesised sound effects + volume popover, copied from the games (../conjunction practice/src/js/02-sound.js;
+   only the saved key differs: eb-vol). The menu uses sndPlace (opening a game), sndHint (Help), sndShuffle (filters). */
+var ac = null, soundOn = true;
+// iOS: Web Audio is silenced by the ring/silent switch unless the page asks for a "playback" session (Safari 16.4+).
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+// "interrupted" (iOS, after a call or the app going to the background) needs a resume too.
+function ctx() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state !== "running") ac.resume(); return ac; }
+// iOS Safari only starts audio inside a real tap (touchend / click, not pointerdown): play one silent sample then.
+var UNLOCK = ["touchend", "pointerup", "click", "keydown"];
+function unlockAudio() {
+  var a = ctx(); if (!a) return;
+  var b = a.createBufferSource(); b.buffer = a.createBuffer(1, 1, 22050); b.connect(a.destination); b.start(0);
+  var done = function () { if (a.state === "running") UNLOCK.forEach(function (t) { removeEventListener(t, unlockAudio, true); }); };
+  if (a.state === "running") done(); else if (a.resume) a.resume().then(done, function () {});
+}
+UNLOCK.forEach(function (t) { addEventListener(t, unlockAudio, true); });
+document.addEventListener("visibilitychange", function () { if (!document.hidden && ac && ac.state !== "running") ac.resume(); });
+function tone(f, t0, dur, vol, f2, bell) {
+  var a = ctx(); if (!a || !soundOn) return;
+  var t = a.currentTime + t0, g = a.createGain(), lp = a.createBiquadFilter();
+  lp.type = "lowpass"; lp.frequency.value = 2200; g.connect(lp); lp.connect(masterGain(a));
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  [[1, 1], [bell ? 2 : 0, .08]].forEach(function (p) {
+    if (!p[0]) return;
+    var o = a.createOscillator(), og = a.createGain(); o.type = "sine";
+    o.frequency.setValueAtTime(f * p[0], t); if (f2) o.frequency.exponentialRampToValueAtTime(f2 * p[0], t + dur * .8);
+    og.gain.value = p[1]; o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + .05);
+  });
+}
+// step = semitones up (the combo chime climbs).
+function sndOk(step) { const k = Math.pow(2, (step || 0) / 12); tone(329.63 * k, 0, .32, .12, 0, true); tone(493.88 * k, .11, .55, .11, 0, true); }
+function sndBad() { tone(293.66, 0, .24, .1, 255); tone(246.94, .17, .34, .09, 210); }
+function sndWin() { [261.63, 329.63, 392, 440, 523.25].forEach(function (f, i) { tone(f, i * .13, i === 4 ? .9 : .45, .1, 0, true); }); }
+function sndShuffle() {
+  [[280, 0], [350, .1], [440, .2]].forEach(function (n, k) { tone(n[0], n[1], .14, .07 - k * .006, n[0] * 1.6); });
+}
+var ICON_ON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>', ICON_OFF = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>';
+var ICON_LOW = ICON_ON.replace('<path d="M18.5 5.5a9 9 0 0 1 0 13"/>', '');
+var vol = parseInt(load("eb-vol"), 10); if (isNaN(vol)) vol = 55;
+var prevVol = vol > 0 ? vol : 55, mg = null;
+function masterGain(a) { if (!mg || mg.context !== a) { mg = a.createGain(); mg.connect(a.destination); mg.gain.value = vol / 100 * 3; } return mg; }
+var volwrap = document.getElementById("volwrap"), volEl = document.getElementById("vol"), sndBtn = document.getElementById("snd");
+function applyVol(v) {
+  vol = Math.max(0, Math.min(100, v)); soundOn = vol > 0; if (vol > 0) prevVol = vol; volEl.value = vol; store("eb-vol", vol);
+  if (mg) mg.gain.setTargetAtTime(vol / 100 * 3, mg.context.currentTime, .02);
+  sndBtn.innerHTML = vol === 0 ? ICON_OFF : vol < 40 ? ICON_LOW : ICON_ON; sndBtn.setAttribute("aria-pressed", vol > 0);
+}
+volEl.addEventListener("input", function () { applyVol(parseInt(volEl.value, 10)); });
+volEl.addEventListener("change", function () { ctx(); sndOk(); });
+sndBtn.addEventListener("click", function () {
+  var open = volwrap.classList.contains("open") || (canHover && volwrap.matches(":hover"));
+  if (!open) { volwrap.classList.add("open"); return; }
+  applyVol(vol > 0 ? 0 : prevVol); if (vol > 0) { ctx(); sndOk(); }
+});
+document.addEventListener("click", function (e) { if (e.target.isConnected && !volwrap.contains(e.target)) volwrap.classList.remove("open"); });
+applyVol(vol);
+// Placing a word: a soft pop that drops in pitch, then a bright two-note chime.
+function sndPlace() { tone(900, 0, .07, .11, 420); tone(783.99, .03, .22, .1, 0, true); tone(1174.66, .07, .3, .07, 0, true); }
+function sndBack() { tone(493.88, 0, .1, .045, 370); }
+function sndHint() { tone(659.25, 0, .18, .06, 0, true); tone(987.77, .08, .3, .05, 0, true); }
+// The TV censor bleep that stands in for a verb gap while the text is not yet checked: a flat 1 kHz sine at full
+// level for about a word's length, switched on and off almost instantly (no fade, no filter), like a real bleep.
+const BLEEP_SECS = .55;
+function sndBleep() {
+  var a = ctx(); if (!a || !soundOn) return;
+  var t = a.currentTime + .01, o = a.createOscillator(), g = a.createGain();
+  o.type = "sine"; o.frequency.value = 1000;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.16, t + .008);
+  g.gain.setValueAtTime(.16, t + BLEEP_SECS - .008); g.gain.linearRampToValueAtTime(0, t + BLEEP_SECS);
+  o.connect(g); g.connect(masterGain(a)); o.start(t); o.stop(t + BLEEP_SECS + .02);
+}
+
+/* 10-menu.js — the menu: greeting, "My level" and category filters, the EN / PT switch, the game cards (from
+   APP.games, which build.py takes from games.json), Continue, "New" badges and launching a game.
+   Saved: eb-level, eb-cat, eb-lang, eb-last (last game), eb-plays ({id: {n: times opened, t: last day}}),
+   eb-days (days a game was opened), eb-first (first visit). */
+const CATS = [
+  { id: "all", en: "All games", pt: "Todos", h: 255 },
+  { id: "grammar", en: "Grammar", pt: "Gramática", h: 215 },
+  { id: "vocabulary", en: "Vocabulary", pt: "Vocabulário", h: 150 },
+  { id: "pronunciation", en: "Pronunciation", pt: "Pronúncia", h: 320 }
+];
+const LEVELS = ["A1", "A2", "B1", "B2+"];                // the "My level" buttons
+const LEVEL_INFO = {
+  "A1": { c: ["#f9a826", "#f47b3a"], t: "A1 · absolute beginner · iniciante" },
+  "A2": { c: ["#3fcf9a", "#2bb5c9"], t: "A2 · beginner · básico" },
+  "B1": { c: ["#5b8def", "#6c63ff"], t: "B1 · intermediate · intermediário" },
+  "B2+": { c: ["#e0558a", "#b44fd1"], t: "B2+ · upper intermediate and advanced · intermediário avançado e avançado" }
+};
+// A level's rank; B2 and C1 both count as B2+.
+const RANK = { A1: 0, A2: 1, B1: 2, B2: 3, C1: 3 };
+const GAMES = APP.games;
+const byId = Object.fromEntries(GAMES.map((g) => [g.id, g]));
+const ICON_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7.5 4.8v14.4L19 12z" fill="currentColor"/></svg>';
+
+let level = load("eb-level") || "any";
+let cat = load("eb-cat") || "all";
+if (level !== "any" && !LEVEL_INFO[level]) level = "any";
+if (!CATS.some((c) => c.id === cat)) cat = "all";
+let plays = loadJSON("eb-plays", {});
+let days = loadJSON("eb-days", []);
+const firstVisit = !load("eb-first");
+if (firstVisit) store("eb-first", today());
+
+// Does the game cover this level? "B1+" covers B1 and up; B2, B2+ and C1 all count as B2+; no levels = everyone.
+function covers(g, lv) {
+  if (lv === "any" || !g.levels.length) return true;
+  const j = RANK[lv.replace("+", "")];
+  return g.levels.some((l) => {
+    const i = RANK[l.replace("+", "")];
+    return l.endsWith("+") ? j >= i : i === j;
+  });
+}
+// The card's one level label: "A2 – B2+" when its levels are next to each other, "B2+" for one, "A1 · B1" when
+// they are apart, "All levels" for a game with no levels.
+function levelLabel(g) {
+  if (!g.levels.length) return "All levels";
+  const on = LEVELS.map((l) => covers(g, l));
+  const names = LEVELS.filter((l, i) => on[i]);
+  if (names.length < 2) return names[0] || g.levels.join(" · ");
+  const solid = on.slice(on.indexOf(true), on.lastIndexOf(true) + 1).every(Boolean);
+  return solid ? names[0] + " – " + names[names.length - 1] : names.join(" · ");
+}
+
+function isNew(g) {           // not opened yet on this device (2026-11-22, the user: untried games keep "New")
+  return !plays[g.id];
+}
+function playedLabel(g) {
+  const p = plays[g.id];
+  if (!p) return "";
+  const d = dayDiff(p.t, today());
+  return d <= 0 ? "Played today" : d === 1 ? "Played yesterday" : d < 30 ? `Played ${d} days ago` : "";
+}
+
+// ---------------------------------------------------------------- greeting and Continue
+
+function greet() {
+  const h = new Date().getHours();
+  // English only here: in the welcome area only the lead line has a Portuguese version (the user's choice)
+  $("greet").textContent = firstVisit ? "Welcome!" : h < 5 ? "Hello, night owl!" : h < 12 ? "Good morning!"
+    : h < 18 ? "Good afternoon!" : "Good evening!";
+  if (firstVisit) {
+    $("lead").innerHTML = both("Tap a bubble to start. Every game is a different way to practise your English.",
+      "Toque em uma bolha para começar. Cada jogo é um jeito diferente de praticar seu inglês.");
+  }
+}
+
+function renderStats() {
+  // (the practice chips: Practised today, the streak, games tried, were removed 2026-11-22, the user's choice;
+  // untried games show "New" on their card instead. eb-days is still recorded.)
+
+  const last = byId[load("eb-last")];
+  const c = $("continue");
+  c.hidden = !last;
+  if (last) {
+    c.style.setProperty("--h", last.hue);
+    c.href = `games/${last.id}.html`;
+    c.dataset.id = last.id;
+    $("continue-title").textContent = last.title;
+  }
+}
+
+// ---------------------------------------------------------------- filters
+
+function renderLevels() {
+  const seg = $("levelseg");
+  seg.querySelectorAll("button").forEach((b) => b.remove());
+  ["any"].concat(LEVELS).forEach((l) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.l = l;
+    b.textContent = l === "any" ? "All" : l;
+    b.title = l === "any" ? "Every level · Todos os níveis" : LEVEL_INFO[l].t;
+    const c = l === "any" ? ["#8f86f7", "#6c63ff"] : LEVEL_INFO[l].c;       // "All" has the app's violet
+    b.style.setProperty("--lv", c[0]); b.style.setProperty("--lv2", c[1]);
+    b.setAttribute("aria-pressed", String(l === level));
+    seg.appendChild(b);
+  });
+}
+
+// The pill that slides under the chosen level (copied from Be, Do or Modal's placeInd, ../bedomodal/src/js/40-focus.js)
+function placeLevelPill() {
+  const box = $("levelseg"), ind = box.querySelector(".seg-ind"), b = box.querySelector('button[aria-pressed="true"]');
+  if (!ind || !b) return;
+  ind.style.width = b.offsetWidth + "px"; ind.style.height = b.offsetHeight + "px";
+  ind.style.transform = "translate(" + b.offsetLeft + "px," + b.offsetTop + "px)";
+  const lv = b.style.getPropertyValue("--lv");
+  if (lv) { ind.style.setProperty("--lv", lv); ind.style.setProperty("--lv2", b.style.getPropertyValue("--lv2")); }
+  // the chosen level's colours also paint the chosen category pill and EN / PT (--sel, --sel2: 20-hero.css)
+  // (set on the pills' own containers, not on <html>: fading a colour every element inherits would restyle the
+  // whole page on every frame)
+  if (lv) [$("cats"), ...document.querySelectorAll(".langsw")].forEach((el) => {
+    el.style.setProperty("--sel", lv); el.style.setProperty("--sel2", b.style.getPropertyValue("--lv2"));
+  });
+}
+$("levelseg").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-l]");
+  if (!b) return;
+  level = b.dataset.l;
+  store("eb-level", level);
+  root.classList.add("sel-fade");                // from now on the level colours fade into the new ones (20-hero.css)
+  sndShuffle();                                  // the games' level-change sound (sndNew in Be, Do or Modal)
+  $("levelseg").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  placeLevelPill();
+  showLang();                                    // until EN / PT is chosen by hand, the language follows the level
+  renderGames();
+});
+
+// The menu's language, one at a time: every line that has a Portuguese version is written in both (.l-en / .l-pt)
+// and html[data-lang] hides one (00-base.css). Names and short labels stay in English. The switch is the games'
+// EN / PT (.tour-lang), here beside "My level" and again in Help. Saved as eb-lang; until chosen, Portuguese for
+// beginners (My level: All, A1, A2) and English from B1 up, like the games' nativeUi levels. The same rule runs
+// in <head> (index.html), before the first paint.
+function menuLang() {
+  const s = load("eb-lang");
+  return s === "en" || s === "pt" ? s : ["any", "A1", "A2"].includes(level) ? "pt" : "en";
+}
+function showLang() {
+  const l = menuLang();
+  root.dataset.lang = l;
+  document.querySelectorAll(".langsw button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === l)));
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".langsw button[data-lang]");
+  if (!b) return;
+  store("eb-lang", b.dataset.lang);
+  showLang();
+  tone(587.33, 0, .1, .04, 0, true);
+});
+
+function renderCats() {
+  const counts = {};
+  GAMES.filter((g) => covers(g, level)).forEach((g) => { counts[g.category] = (counts[g.category] || 0) + 1; });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  $("cats").innerHTML = CATS.filter((c) => c.id === "all" || GAMES.some((g) => g.category === c.id)).map((c) =>
+    `<button type="button" data-c="${c.id}" aria-pressed="${c.id === cat}" style="--h:${c.h}">` +
+    `${esc(c.en)}<span class="n">${c.id === "all" ? total : (counts[c.id] || 0)}</span></button>`).join("");
+}
+$("cats").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-c]");
+  if (!b) return;
+  cat = b.dataset.c;
+  store("eb-cat", cat);
+  tone(587.33, 0, .1, .04, 0, true);
+  renderGames();
+});
+
+// ---------------------------------------------------------------- the cards
+
+// A word bubble's size from its length (the lanes' spacing was checked with these sizes: max 80 px).
+function wordSize(w) { return w.length <= 3 ? 52 : w.length <= 5 ? 60 : w.length <= 8 ? 70 : 80; }
+// One rise of a word bubble, in seconds (2026-11-22, the user: "a bit slower"; it was 12). Keep in step with
+// `wordrise` in 30-cards.css. All bubbles share it, so their spacing doesn't change with it.
+const CYCLE = 16;
+// The soap look inside each word bubble (30-cards.css; Be, Do or Modal's SOAP without the parts that follow the
+// mouse): the film (a turning colour layer), the rim (turning too) and the word. The shine spots are ::before / ::after.
+const FB_SOAP = '<span class="film"><i class="spin"></i></span><span class="rim"><i class="spin"></i></span>';
+
+// A lane with more than one word: each time its bubble starts a new rise (it is below the header, out of sight),
+// it shows the lane's next word.
+document.addEventListener("animationiteration", (e) => {
+  const el = e.target;
+  if (e.animationName !== "wordrise" || !el.dataset || !el.dataset.words) return;
+  const list = JSON.parse(el.dataset.words), next = ((+el.dataset.turn || 0) + 1) % list.length;
+  el.dataset.turn = next;
+  el.style.setProperty("--d", wordSize(list[next]) + "px");
+  el.querySelector(".wl").textContent = list[next];
+});
+
+function cardHTML(g, i) {
+  // Round word bubbles rising through the header (30-cards.css .fbw / .fb). Each word gets a lane across the header
+  // and a start point in the CYCLE; neighbouring lanes start far apart in the cycle, so bubbles never touch.
+  // At most 5 lanes (more would touch); a card can have up to 8 words: then lanes take turns, each lane's bubble
+  // changes to its next word while it is below the header (turnWord(), on every new rise).
+  const all = g.bubbles.slice(0, 8), n = Math.min(all.length, 5);
+  const lanes = Array.from({ length: n }, (_, k) => all.filter((_, j) => j % n === k));
+  const words = lanes.map((l) => l[0]);
+  const PHASE = { 1: [0], 2: [0, .5], 3: [0, .67, .33], 4: [0, .5, .25, .75], 5: [0, .4, .8, .2, .6] }[n];
+  // The headers start empty: every bubble waits below the header and rises in when its turn comes (one every 2.4 s
+  // with 5 words), so they come in one after another from the bottom. Cards start a little apart, not in step.
+  const shift = (i % 4) * .6;
+  const bubbles = words.map((w, k) => {
+    const x = n === 1 ? 50 : 15 + k * (70 / (n - 1));
+    const d = wordSize(w);
+    const del = PHASE[k] * CYCLE + shift;
+    const turns = lanes[k].length > 1 ? ` data-words="${esc(JSON.stringify(lanes[k]))}"` : "";
+    return `<span class="fbw"${turns} style="--x:${x.toFixed(1)}%;--d:${d}px;--del:${del.toFixed(2)}s;--ang:${(i * 47 + k * 83) % 360}deg;--ry:${(8 + PHASE[k] * 50).toFixed(0)}%">` +
+      `<span class="fb">${FB_SOAP}<span class="wl">${esc(w)}</span></span></span>`;
+  }).join("");
+  const lv = `<span class="lv">${esc(levelLabel(g))}</span>`;
+  const last = playedLabel(g);
+  return `<a class="card" href="games/${g.id}.html" data-id="${g.id}" style="--h:${g.hue};--i:${i}" aria-label="${esc(g.title)}: ${esc(g.en)}">
+  <span class="card-art" aria-hidden="true">${bubbles}</span>
+  <span class="card-go" aria-hidden="true">${ICON_PLAY}</span>
+  <span class="card-body">
+    <span class="card-title">${esc(g.title)}${isNew(g) ? `<em class="new">✦ ${both("New", "Novo")}</em>` : ""}</span>
+    <span class="card-desc l-en" lang="en">${esc(g.en)}</span>
+    <span class="card-desc l-pt" lang="pt-BR">${esc(g.pt)}</span>
+    <span class="card-foot">${lv}${last ? `<span class="last">${last}</span>` : ""}</span>
+  </span>
+</a>`;
+}
+
+// Only the cards on (or near) the screen animate their word bubbles; the others wait (.offscreen, 30-cards.css), so
+// the menu stays light however many games it has. Cards start "off screen" until the observer has looked at them.
+// A card first reaching the screen while scrolling arrives already full of bubbles: its animations are moved
+// forward to a moment where the stream is in full flow (same spacing as always). Only the cards on screen when the
+// menu opens start empty and fill up from the bottom.
+const WATCH_MARGIN = 120;
+let emptyStart = true;           // true for the render when the menu opens (or comes back); filters then render full
+function fillCard(card) {
+  card.querySelectorAll(".fbw, .fb").forEach((el) => el.getAnimations().forEach((a) => { a.currentTime = (CYCLE + 6) * 1000; }));   // later than every bubble's start (--del)
+}
+const cardWatch = "IntersectionObserver" in window
+  ? new IntersectionObserver((entries) => entries.forEach((e) => {
+      const card = e.target;
+      if (e.isIntersecting && !card.dataset.seen) { card.dataset.seen = "1"; fillCard(card); }
+      card.classList.toggle("offscreen", !e.isIntersecting);
+    }), { rootMargin: WATCH_MARGIN + "px 0px" })
+  : null;
+
+function renderGames() {
+  renderCats();
+  const host = $("games");
+  const cats = CATS.filter((c) => c.id !== "all" && (cat === "all" || c.id === cat));
+  let shown = 0, html = "", i = 0;
+  cats.forEach((c) => {
+    const all = GAMES.filter((g) => g.category === c.id);
+    const fit = all.filter((g) => covers(g, level));
+    if (!fit.length) return;
+    shown += fit.length;
+    const hiddenN = all.length - fit.length;
+    html += `<section class="sec" aria-labelledby="sec-${c.id}">
+  <div class="sec-h" style="--h:${c.h}"><h2 id="sec-${c.id}"><span class="sec-dot" aria-hidden="true"></span>${esc(c.en)}</h2>` +
+      (hiddenN ? `<span class="sec-more">· ${hiddenN} more at other levels</span>` : "") + `</div>
+  <div class="grid">${fit.map((g) => cardHTML(g, i++)).join("")}</div>
+</section>`;
+  });
+  // A game that stays on the menu through a level / category change keeps its card AS IT IS (never replaced, never
+  // moved to another parent): its header bubbles go on rising without the slightest jump. Only the games that leave
+  // are removed and the ones that arrive are added in their places. (Copying the bubbles' timing onto a new card
+  // still stuttered on phones: a new card needs a frame or two to be drawn.)
+  if (emptyStart) host.innerHTML = html;
+  else {
+    const tpl = document.createElement("template");
+    tpl.innerHTML = html;
+    const oldSecs = new Map([...host.querySelectorAll(":scope > .sec")].map((s) => [s.getAttribute("aria-labelledby"), s]));
+    let prev = null;
+    [...tpl.content.children].filter((x) => x.matches(".sec")).forEach((ns) => {
+      const key = ns.getAttribute("aria-labelledby"), s = oldSecs.get(key);
+      if (!s) { host.insertBefore(ns, prev ? prev.nextSibling : host.firstChild); prev = ns; return; }
+      oldSecs.delete(key);
+      prev = s;
+      const oh = s.querySelector(".sec-h"), nh = ns.querySelector(".sec-h");
+      if (oh.innerHTML !== nh.innerHTML) oh.replaceWith(nh);
+      const grid = s.querySelector(".grid");
+      const oldCards = new Map([...grid.children].map((c) => [c.dataset.id, c]));
+      let pc = null;
+      [...ns.querySelector(".grid").children].forEach((nc) => {
+        const c = oldCards.get(nc.dataset.id);
+        if (!c) { grid.insertBefore(nc, pc ? pc.nextSibling : grid.firstChild); pc = nc; return; }
+        oldCards.delete(nc.dataset.id);
+        pc = c;
+        c.style.setProperty("--i", nc.style.getPropertyValue("--i"));
+        const ob = c.querySelector(".card-body"), nb = nc.querySelector(".card-body");
+        if (ob.innerHTML !== nb.innerHTML) ob.replaceWith(nb);
+      });
+      oldCards.forEach((c) => c.remove());
+    });
+    oldSecs.forEach((s) => s.remove());
+  }
+  if (cardWatch) {
+    cardWatch.disconnect();
+    host.querySelectorAll(".card").forEach((c) => {
+      const kept = c.dataset.watched;
+      // on screen now: these start empty and fill up from the bottom (marked "seen", so they are not filled)
+      if (emptyStart) {
+        const r = c.getBoundingClientRect();
+        if (r.bottom > -WATCH_MARGIN && r.top < innerHeight + WATCH_MARGIN) c.dataset.seen = "1";
+      }
+      // a card that stayed keeps its state (no pause until the observer has looked at it again)
+      if (!kept) { c.classList.add("offscreen"); c.dataset.watched = "1"; }
+      cardWatch.observe(c);
+    });
+  }
+  const empty = $("empty");
+  empty.hidden = shown > 0;
+  if (!shown) {
+    empty.innerHTML = both(`No games here for level ${esc(level)} yet.`, `Ainda não há jogos aqui para o nível ${esc(level)}.`) + "<br>" +
+      `<button type="button" class="pill" id="showall">${both("Show all levels", "Ver todos os níveis")}</button>`;
+    $("showall").addEventListener("click", () => { $("levelseg").querySelector('[data-l="any"]').click(); });
+  }
+}
+
+// ---------------------------------------------------------------- opening a game
+
+function launch(id, el) {
+  const g = byId[id];
+  if (!g) return;
+  const t = today();
+  const p = plays[id] || { n: 0 };
+  plays[id] = { n: p.n + 1, t: t };
+  storeJSON("eb-plays", plays);
+  if (!days.includes(t)) { days.push(t); days = days.slice(-120); storeJSON("eb-days", days); }
+  store("eb-last", id);
+  try { sessionStorage.setItem("eb-from-menu", id); sessionStorage.setItem("eb-level-go", id); } catch (e) {}   // eb-level-go: the game opens at "My level" (game-head.html)
+  const go = () => { location.href = `games/${id}.html`; };
+  if (!el) { sndPlace(); return go(); }
+  // The whole menu (header included) fades out while the pop plays, leaving only the background; then the game
+  // arrives (its header slides in). Without it, the game's header slid in over the fading menu header: choppy.
+  // The fade starts first: starting the sound can hold the page up for a moment.
+  if (!reduceMotion) el.classList.add("launching");
+  root.classList.add("eb-leaving");
+  // the games' "word placed" pop + chime, one frame later: starting the sound engine can block the page for a
+  // moment, and the fade must already be running by then
+  requestAnimationFrame(() => setTimeout(sndPlace, 0));
+  setTimeout(go, 320);                           // the fade is over and the pop has been heard
+}
+
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a.card, a.continue");
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+  e.preventDefault();
+  launch(a.dataset.id, a);
+});
+
+// Coming back with the phone's Back button can show the page as it was: refresh what may have changed.
+// Leaving the menu (into a game): every rising card bubble goes back to its start, below the screen. When the phone later
+// restores the menu from memory, the cards start empty again (the background bubbles just carry on, as in the games).
+window.addEventListener("pagehide", () => {
+  document.querySelectorAll(".fbw").forEach((el) => el.getAnimations().forEach((a) => { a.currentTime = 0; }));
+});
+
+// The header's slide-in (10-dock.css html.eb-arrive) has ended: it gets its frosted blur back.
+const dockEl = document.querySelector(".dock");
+let slideWaiters = [];
+function slideDone() {
+  root.classList.remove("eb-arrive");
+  const w = slideWaiters; slideWaiters = []; w.forEach((f) => f());
+}
+function afterSlide(f) { if (root.classList.contains("eb-arrive")) slideWaiters.push(f); else f(); }
+dockEl.addEventListener("animationend", (e) => { if (e.animationName === "eb-dock-in") slideDone(); });
+// in case the slide never runs (reduced motion) or never ends: 1.5 s after load, and after each restore
+setTimeout(slideDone, 2200);              // (font wait up to 0.7 s + slide 0.48 s)
+window.addEventListener("pageshow", (e) => { if (e.persisted) setTimeout(slideDone, 1500); });
+if (reduceMotion) slideDone();
+
+// On a phone this is the usual way back: Chrome restores the page as it was, without running it again.
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) {
+    window.scrollTo(0, 0);                       // back from a game: always the top of the menu
+    root.classList.add("frozen"); root.classList.remove("eb-leaving");   // undo the fade-out (instantly)
+    root.classList.remove("eb-arrive"); void dockEl.offsetWidth; root.classList.add("eb-arrive");   // slide in again
+    // no transitions for one moment, so the popped bubbles and pressed card snap back instead of animating
+    root.classList.add("frozen");
+    bgReady = false; applySavedBg(); bgReady = true;   // the colour may have been changed inside the game
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("frozen")));
+    // "Played today", Continue and the cards are rebuilt only after the header has landed (rebuilding them during
+    // the slide made it stutter)
+    afterSlide(() => {
+      $("games").classList.add("still");          // no entrance animation when coming back
+      plays = loadJSON("eb-plays", {});
+      days = loadJSON("eb-days", []);
+      renderStats();
+      emptyStart = true; renderGames(); emptyStart = false;
+    });
+  }
+  document.querySelectorAll(".launching").forEach((x) => x.classList.remove("launching"));
+});
+
+// ---------------------------------------------------------------- background bubbles
+
+// Exactly as in Be, Do or Modal (../bedomodal/src/js/06-sky.js, 2026-11-22; the user wants them identical): 7 bubbles
+// of random size (40-140 px), place and pace (95-145 s a climb). At load they are already part-way up, spread over
+// the screen (a negative delay starts each climb 15% to 80% of the way up), and the layer fades in (.sky.in). They
+// pause during the header's slide (30-cards.css) and are left out with reduced motion. Look: .sky in 00-base.css.
+(function sky() {
+  if (reduceMotion) return;
+  const host = $("sky");
+  const hues = [215, 330, 150, 265, 30, 190];
+  for (let k = 0; k < 7; k++) {
+    const s = document.createElement("span");
+    const size = 40 + Math.round(Math.random() * 100), t = 95 + Math.round(Math.random() * 50);
+    const at = (0.15 + 0.65 * (k + Math.random() * 0.8) / 7) * t;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.round(Math.random() * 96)}%;` +
+      `--h:${hues[k % hues.length]};--t:${t}s;--d:-${at.toFixed(1)}s;--x:${Math.round(Math.random() * 80 - 40)}px`;
+    host.appendChild(s);
+  }
+  setTimeout(() => host.classList.add("in"), 60);   // a timer, not animation frames: a page opened in the background gets none until shown
+})();
+
+greet();
+renderLevels();
+showLang();
+placeLevelPill();
+// Start the header's slide once the font is ready (at most 0.7 s), so no text changes shape while things show;
+// the level pill is placed for the final font first, so it doesn't slide on its own.
+function startArrival() {
+  if (!root.classList.contains("eb-wait")) return;
+  placeLevelPill();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $("levelseg").querySelector(".seg-ind").classList.add("ready");
+    root.classList.remove("eb-wait");
+  }));
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(startArrival);
+setTimeout(startArrival, 700);
+window.addEventListener("resize", placeLevelPill);
+renderStats();
+renderGames();
+emptyStart = false;              // from now on (level / category changes) cards render already full of bubbles
+
+// 15-shine.js — the Hello / Olá bubbles' shine follows the mouse a little (2026-11-22, copied from Be, Do or Modal's
+// 26-shine.js, without its dragging parts: nothing is carried here). Each bubble's shine spot stays in its top-left
+// corner and leans a little toward the cursor, the small spot moves the other way, and the side facing the cursor
+// glows as it nears. One listener; each frame eases one set of numbers per bubble toward the cursor and writes only
+// the transform / opacity of the spans that show them (.spot, .pl, .glint, .fg, .rh: index.html, 20-hero.css); the
+// loop stops once all have settled. Mouse only (on phones the bubbles keep their resting shine). Nothing with reduced
+// motion. Off screen the bubbles' animations pause (.still).
+(function () {
+  const art = document.querySelector(".hero-art");
+  if (!art) return;
+  if (window.IntersectionObserver) new IntersectionObserver((es) => es.forEach((e) => art.classList.toggle("still", !e.isIntersecting))).observe(art);
+  if (reduceMotion) return;
+  const bs = [...art.querySelectorAll(".hb")];
+  let px = 0, py = 0, on = false, raf = 0, last = 0, dirty = true;
+  let rcache = null, rtime = 0;
+  const RECT_MS = 250;
+  // the same numbers as the game: how far the spot leans (share of the bubble's height), how quickly that fades with
+  // distance, the glow's reach (nearness = (GLOW / (distance + GLOW))^2) and the easing per 60 fps frame
+  const RIGHT = 0.07, DOWN = 0.08, LEFT = 0.025, UP = 0.03, NEAR0 = 0.5, FALL = 160, GLOW = 190, EASE = 0.3;
+  function parts(b) { return { sp: b.querySelector(".spot"), pl: b.querySelector(".spot .pl"), gl: b.querySelector(".glint"), fg: b.querySelector(".fg"), rh: b.querySelector(".rh"), w: {} }; }
+  function put(e, n, p, v) { const key = n + p; if (e.w[key] !== v) { e.w[key] = v; e[n].style[p] = v; } }
+  function paint(st) {
+    const e = st.el, k = Math.round(st.sk * 100) / 100, sx = st.sx, sy = st.sy, o = k.toFixed(2);
+    put(e, "sp", "transform", "translate(" + sx.toFixed(1) + "px," + sy.toFixed(1) + "px) rotate(-14deg) scale(" + (1 + 0.1 * k).toFixed(3) + ")");
+    put(e, "pl", "opacity", o);
+    put(e, "gl", "transform", "translate(" + (-0.35 * sx).toFixed(1) + "px," + (-0.35 * sy).toFixed(1) + "px) rotate(-45deg)");
+    put(e, "gl", "opacity", (0.8 + 0.2 * k).toFixed(3));
+    put(e, "fg", "transform", "translate(" + (st.ux * 50 / 1.2).toFixed(1) + "%," + (st.uy * 50 / 1.9).toFixed(1) + "%)");
+    put(e, "fg", "opacity", o);
+    put(e, "rh", "transform", "translate(" + (st.ux * 50 / 1.1).toFixed(1) + "%," + (st.uy * 50 / 1.8).toFixed(1) + "%)");
+    put(e, "rh", "opacity", o);
+  }
+  function frame(now) {
+    raf = 0;
+    const f = 1 - Math.pow(1 - EASE, Math.min(4, (now - (last || now - 16.7)) / 16.7));   // the same easing at any frame rate
+    last = now;
+    let rs = rcache, moving = false;
+    if (!rs || now - rtime >= RECT_MS) { rs = rcache = bs.map((b) => b.getBoundingClientRect()); rtime = now; }   // reads first, then the writes
+    bs.forEach((b, i) => {
+      const r = rs[i];
+      if (!r.width) return;                          // hidden (Let's go! on phones)
+      const st = b._sh || (b._sh = { sx: 0, sy: 0, sk: 0, ux: 0, uy: -1, el: parts(b) });
+      let t = st.t;
+      if (dirty || !t) {
+        t = st.t = { sx: 0, sy: 0, sk: 0, ux: st.ux, uy: st.uy };
+        if (on) {
+          const dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
+          let d = Math.sqrt(dx * dx + dy * dy);
+          const k = (NEAR0 + (1 - NEAR0) * FALL / (d + FALL)) / Math.max(d, 1);
+          t.sx = dx * k * (dx > 0 ? RIGHT : LEFT) * r.height;
+          t.sy = dy * k * (dy > 0 ? DOWN : UP) * r.height;
+          const g = GLOW / (d + GLOW); t.sk = g * g;
+          d = Math.max(d, 1); t.ux = dx / d; t.uy = dy / d;
+        }
+      }
+      let changed = false;
+      ["sx", "sy", "sk", "ux", "uy"].forEach((p) => {
+        let v = st[p] + (t[p] - st[p]) * f;
+        if (Math.abs(t[p] - v) < (p === "sx" || p === "sy" ? 0.05 : 0.002)) v = t[p]; else moving = true;
+        if (v !== st[p]) changed = true;
+        st[p] = v;
+      });
+      if (!changed && st.w) return;
+      st.w = true;
+      paint(st);
+    });
+    dirty = false;
+    if (moving) { if (!raf) raf = requestAnimationFrame(frame); } else last = 0;   // only until everything has settled
+  }
+  function ask() { dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
+  document.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" || art.classList.contains("still")) return;
+    px = e.clientX; py = e.clientY; on = true; ask();
+  }, { passive: true });
+  document.documentElement.addEventListener("pointerleave", () => { on = false; ask(); });
+  window.addEventListener("scroll", () => { rcache = null; if (on) ask(); }, { passive: true });
+  window.addEventListener("resize", () => { rcache = null; }, { passive: true });
+})();
+
+/* 20-pwa.js — the "app" part: the offline copy (service worker), "Update" when a new version is ready, the Install
+   button (in the welcome area), the online / offline notes, the Help modal and the version line in the footer.
+   Notes with a Portuguese version use both() (00-util.js): one language shows at a time. */
+
+// ---------------------------------------------------------------- toast
+
+let toastTimer = 0;
+function toast(html, opts = {}) {
+  const t = $("toast");
+  clearTimeout(toastTimer);
+  t.innerHTML = `<span>${html}</span>` + (opts.action ? `<button type="button" class="pill"><span>${opts.action}</span></button>` : "");
+  t.classList.toggle("plain", !opts.action);
+  t.hidden = false;
+  if (opts.action) t.querySelector("button").addEventListener("click", () => { t.hidden = true; opts.onAction(); });
+  if (opts.ms !== 0) toastTimer = setTimeout(() => { t.hidden = true; }, opts.ms || 4500);
+}
+
+// ---------------------------------------------------------------- version line
+
+(function version() {
+  const [y, m, d] = APP.built.slice(0, 10).split("-").map(Number);
+  const when = new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  $("version").textContent = `${APP.games.length} games · updated ${when}`;
+  $("version").title = "Version " + APP.version;
+})();
+
+// ---------------------------------------------------------------- offline copy and updates
+
+const okLine = $("offline-ok");
+function setOfflineReady(ready) {
+  okLine.classList.toggle("wait", !ready);
+  okLine.innerHTML = ready ? both("Works offline", "Funciona sem internet")
+    : both("Getting ready for offline use…", "Preparando para usar sem internet…");
+}
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  const sw = navigator.serviceWorker;
+  const hadController = !!sw.controller;
+  let reloading = false, updateAsked = false;
+  setOfflineReady(hadController);
+
+  const offerUpdate = (worker) => {
+    toast(both("New games or improvements are ready!", "Há novidades!"), {
+      action: both("Update", "Atualizar"), ms: 0,
+      onAction: () => { updateAsked = true; sndOk(); worker.postMessage("skipWaiting"); }
+    });
+  };
+
+  sw.register("sw.js").then((reg) => {
+    if (reg.waiting && sw.controller) offerUpdate(reg.waiting);
+    reg.addEventListener("updatefound", () => {
+      const w = reg.installing;
+      if (!w) return;
+      w.addEventListener("statechange", () => {
+        if (w.state === "installed" && sw.controller) offerUpdate(w);
+      });
+    });
+    // look for a new version when the app comes back to the screen (installed apps stay open for days)
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => setOfflineReady(false));
+
+  sw.addEventListener("controllerchange", () => {
+    if (updateAsked) {
+      if (!reloading) { reloading = true; location.reload(); }
+      return;
+    }
+    setOfflineReady(true);
+    if (!hadController) toast(both("Ready to use offline ✓", "Pronto para usar sem internet ✓"));
+  });
+} else {
+  okLine.hidden = true;
+}
+
+window.addEventListener("offline", () => toast(both("You are offline: the games still work.", "Sem internet: os jogos continuam funcionando.")));
+window.addEventListener("online", () => toast(both("Back online", "Conectado de novo"), { ms: 2500 }));
+
+// ---------------------------------------------------------------- install
+
+const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let installEvent = null;
+
+// iPhone / iPad: Silent mode can mute the games and no website can detect it, so show a tip once (until "Got it").
+if (isIOS && !load("eb-ios-tip")) {
+  $("iostip").hidden = false;
+  $("iostip-ok").addEventListener("click", () => {
+    store("eb-ios-tip", "1");
+    $("iostip").classList.add("bye");
+    setTimeout(() => { $("iostip").hidden = true; }, reduceMotion ? 0 : 260);
+  });
+}
+const installBtn = $("installbtn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();               // keep Chrome's own banner away; our button asks at a better moment
+  installEvent = e;
+  if (!standalone) installBtn.hidden = false;
+});
+if (isIOS && !standalone) installBtn.hidden = false;     // no install prompt on iPhone: the button shows how
+installBtn.addEventListener("click", async () => {
+  if (!installEvent) { openHelp(); return; }
+  installEvent.prompt();
+  const choice = await installEvent.userChoice.catch(() => null);
+  installEvent = null;
+  if (choice && choice.outcome === "accepted") installBtn.hidden = true;
+});
+window.addEventListener("appinstalled", () => {
+  installBtn.hidden = true;
+  sndWin();
+  toast(both("Installed! Find English Bubbles on your home screen.", "Instalado! Procure o English Bubbles na tela inicial."), { ms: 6000 });
+});
+
+// ---------------------------------------------------------------- help
+
+// Help shows one language, like the rest of the menu: its EN / PT switch is the menu's own (10-menu.js showLang).
+let helpReturn = null;
+function openHelp() {
+  sndHint();
+  helpReturn = document.activeElement;
+  $("help").hidden = false;
+  $("help").querySelector("[data-close]").focus();   // the page behind stops scrolling: 40-overlays.css
+}
+function closeHelp() {
+  $("help").hidden = true;
+  if (helpReturn && helpReturn.focus) helpReturn.focus();
+}
+$("helpbtn").addEventListener("click", openHelp);
+$("helplink").addEventListener("click", openHelp);
+$("help").addEventListener("click", (e) => { if (e.target === $("help") || e.target.closest("[data-close]")) closeHelp(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("help").hidden) closeHelp(); });
+
+</script>
+</body>
+</html>

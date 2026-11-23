@@ -1,0 +1,102 @@
+{
+  "id": "./",
+  "name": "English Bubbles",
+  "short_name": "EN Bubbles",
+  "description": "English practice games for Brazilian learners: grammar, vocabulary and pronunciation, one bubble at a time. Works offline.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./index.html?source=app",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#eae9fb",
+  "theme_color": "#e4f3fb",
+  "categories": [
+    "education",
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png?v=6d0cce7c",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png?v=6d0cce7c",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-192.png?v=6d0cce7c",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/maskable-512.png?v=6d0cce7c",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Be, Do or Modal?",
+      "short_name": "Be, Do or Modal?",
+      "description": "Be, do and modals: drop the right word into the gap.",
+      "url": "games/verb-bubbles.html",
+      "icons": [
+        {
+          "src": "icons/game-337.png?v=6d0cce7c",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Pronouns",
+      "short_name": "Pronouns",
+      "description": "I, me, my or mine? Drag the right pronoun into the gap.",
+      "url": "games/pronouns.html",
+      "icons": [
+        {
+          "src": "icons/game-188.png?v=6d0cce7c",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "A, An or The?",
+      "short_name": "A, An or The?",
+      "description": "A, an, the or nothing? Tap the gaps in short texts until they sound right.",
+      "url": "games/articles.html",
+      "icons": [
+        {
+          "src": "icons/game-37.png?v=6d0cce7c",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Prepositions",
+      "short_name": "Prepositions",
+      "description": "In, on, at, to, for: the prepositions Portuguese speakers mix up.",
+      "url": "games/prepositions.html",
+      "icons": [
+        {
+          "src": "icons/game-158.png?v=6d0cce7c",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
