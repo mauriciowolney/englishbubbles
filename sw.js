@@ -2,7 +2,7 @@
    build.py fills in VERSION (a fingerprint of the app), FILES (every file in dist/) and FONTS (the Google Fonts
    stylesheets the games use). A new VERSION = a new copy: phones download it in the background, and the menu
    offers "Update" (or it takes over the next time the app is opened from scratch). */
-const VERSION = "342c31a136";
+const VERSION = "cc3024cd95";
 const FILES = [
  "./",
  "games/articles.html",
