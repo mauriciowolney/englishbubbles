@@ -1375,6 +1375,10 @@ html:has(.favmodal.show), html:has(.tour:not([hidden])) { overflow: hidden; over
   --ig: inset 0 0 18px color-mix(in srgb, var(--err) 30%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--err) 18%, transparent), 0 6px 14px var(--soap-sh); }
 #core.soap.err .rim { background: var(--err); }
 #core.soap.err .rim i { visibility: hidden; }
+
+/* While the tutorial or a window (.favmodal) is open (body.covered, 21-shine.js) the game behind it stands still: the
+   blur and dimming over it aren't redrawn on every frame (slow phones). Bubbles inside the window keep moving. */
+body.covered :is(.spin, .slot, .sky span):not(.tour *, .favmodal *) { animation-play-state: paused !important; }
 </style>
 </head>
 <body>
@@ -5085,12 +5089,20 @@ if (window.MutationObserver && !reduce) [preveal, card].forEach(function (el) {
   function ask() { dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
   function more() { if (!raf) raf = requestAnimationFrame(frame); }
   document.addEventListener("pointermove", function (e) {
+    if (document.body.classList.contains("covered")) return;   /* the tutorial or a window is open: the spots stay still */
     if (e.pointerType !== "mouse") return;
     px = e.clientX; py = e.clientY; on = true; ask();
   }, { passive: true });
   document.documentElement.addEventListener("pointerleave", function () { on = false; ask(); });
   window.addEventListener("scroll", function () { rcache = null; if (on) ask(); }, { passive: true });
   window.addEventListener("resize", function () { rcache = null; }, { passive: true });
+})();
+
+/* While the tutorial or a window (.favmodal) covers the game, everything behind it stands still (body.covered: the
+   CSS pauses the loops; the shine above ignores the mouse), so slow phones don't redraw the blur over it every frame */
+(function () {
+  function check() { var t = document.getElementById("tour"); document.body.classList.toggle("covered", !!(t && !t.hidden) || !!document.querySelector(".favmodal.show")); }
+  if (window.MutationObserver) new MutationObserver(check).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
 })();
 /* ---------- Background bubbles ---------- */
 // The bubbles drifting up behind everything (ported from Be Do Modal's 06-sky.js, 2026-11-22, itself from English
@@ -5162,7 +5174,16 @@ if (window.MutationObserver && !reduce) [preveal, card].forEach(function (el) {
     var back = from === "verb-wheel" && history.length > 1;
     try { sessionStorage.setItem("eb-back", "1"); } catch (x) {}         // the menu skips its entrance animation
     document.documentElement.classList.add("eb-leaving");
-    var go = function () { if (back) history.back(); else location.href = MENU; };
+    // Safety net (2026-11-24, the user: after reopening the app in a game, Games sometimes left only the background
+    // on screen; the swipe-back gesture still worked): the phone can ignore history.back() from a script, so if this
+    // page is still here shortly after asking, open the menu directly (replace: Back won't return to the faded game).
+    var left = false;
+    window.addEventListener("pagehide", function () { left = true; }, { once: true });
+    var go = function () {
+      if (!back) { location.href = MENU; return; }
+      history.back();
+      setTimeout(function () { if (!left) location.replace(MENU); }, 800);
+    };
     // The menu's "open a game" pop + chime, played through the game's own tone() (so the game's volume and mute
     // apply); then leave once it has been heard.
     if (typeof tone === "function") {

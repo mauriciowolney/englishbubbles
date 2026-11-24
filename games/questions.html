@@ -927,6 +927,10 @@ body.carrying .sky span, body.calm .sky span { animation-play-state: paused; }
    window's card does. Scripts can still scroll the page (the tutorial moves it to what it points at). */
 html:has(.favmodal.show), html:has(.tour:not([hidden])) { overflow: hidden; overscroll-behavior: none; }
 
+/* While the tutorial or a window (.favmodal) is open (body.covered, 16-shine.js) the game behind it stands still: the
+   blur and dimming over it aren't redrawn on every frame (slow phones). Bubbles inside the window keep moving. */
+body.covered :is(.cloud .w, .b.mb, .spin, .sky span):not(.tour *, .favmodal *) { animation-play-state: paused !important; }
+
 /* 30-end.css — end-of-game modal contents and the question lists (end list, Favorites / Seen). */
 .pend { text-align: center; padding: 6px 0 4px; }
 .pend b { display: block; font-size: 2.2rem; }
@@ -2392,6 +2396,8 @@ function mergePair(q, a, from) {
       q.el.innerHTML = SOAP + '<span class="mq">' + qHTML(q.it) + '</span><span class="ma">— ' + esc(q.it.a) + "</span>";
     });
     flash(q.el, "merge"); burst(q.el);
+    // the pair is read at once as a dialogue (a new match cuts the previous one off)
+    speakLines([q.it.q, q.it.a]);
     r.done++;
     if (r.done === r.n) setTimeout(() => { if (G.r === r) finishMatch(); }, reduceMotion ? 0 : 550);
   }, reduceMotion ? 0 : 330);
@@ -2759,6 +2765,7 @@ if (window.MutationObserver && !reduceMotion) {
   function ask() { dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
   function more() { if (!raf) raf = requestAnimationFrame(frame); }
   document.addEventListener("pointermove", e => {
+    if (document.body.classList.contains("covered")) return;   // the tutorial or a window is open: the spots stay still
     touch = e.pointerType !== "mouse";
     if (touch && !carried()) return;
     px = e.clientX; py = e.clientY; on = true; ask();
@@ -2769,6 +2776,13 @@ if (window.MutationObserver && !reduceMotion) {
   document.documentElement.addEventListener("pointerleave", () => { on = false; ask(); });
   window.addEventListener("scroll", () => { rcache = null; if (on) ask(); }, { passive: true });
   window.addEventListener("resize", () => { rcache = null; }, { passive: true });
+})();
+
+// While the tutorial or a window (.favmodal) covers the game, everything behind it stands still (body.covered: the
+// CSS pauses the loops; the shine above ignores the mouse), so slow phones don't redraw the blur over it every frame
+(() => {
+  const check = () => { const t = document.getElementById("tour"); document.body.classList.toggle("covered", !!(t && !t.hidden) || !!document.querySelector(".favmodal.show")); };
+  if (window.MutationObserver) new MutationObserver(check).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
 })();
 
 /* 20-end.js — end-of-game modal: score, stars (round points only), hint bonus, quick-question point, level progress,
@@ -3344,7 +3358,16 @@ if (load("whq-tour") === "auto") tourBtn.classList.add("fresh");   // it only op
     var back = from === "questions" && history.length > 1;
     try { sessionStorage.setItem("eb-back", "1"); } catch (x) {}         // the menu skips its entrance animation
     document.documentElement.classList.add("eb-leaving");
-    var go = function () { if (back) history.back(); else location.href = MENU; };
+    // Safety net (2026-11-24, the user: after reopening the app in a game, Games sometimes left only the background
+    // on screen; the swipe-back gesture still worked): the phone can ignore history.back() from a script, so if this
+    // page is still here shortly after asking, open the menu directly (replace: Back won't return to the faded game).
+    var left = false;
+    window.addEventListener("pagehide", function () { left = true; }, { once: true });
+    var go = function () {
+      if (!back) { location.href = MENU; return; }
+      history.back();
+      setTimeout(function () { if (!left) location.replace(MENU); }, 800);
+    };
     // The menu's "open a game" pop + chime, played through the game's own tone() (so the game's volume and mute
     // apply); then leave once it has been heard.
     if (typeof tone === "function") {

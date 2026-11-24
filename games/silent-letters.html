@@ -540,6 +540,8 @@ body.calm :is(.b, .lt) .spin { animation-play-state: paused; }
 /* While the practice window covers the page, the page's films and background bubbles hold still: turning under its
    frosted glass dropped the window to ~20 fps (60 when paused). */
 html:has(#pmodal:not([hidden])) :is(#bubbles .spin, .sky span) { animation-play-state: paused; }
+/* The same while the tutorial is open (2026-11-24, from False Friend Bubbles), the practice window's tiles included */
+html:has(.tour:not([hidden])) :is(.spin, .sky span, .m.roll .mi):not(.tour *) { animation-play-state: paused !important; }
 /* While the page scrolls (#bubbles.scrolling, 15-soap.js: until 150 ms after the last scroll) the films pause too: turning
    while scrolling still made 5-14 slow frames in 100 (0-4 paused). Paused, not stopped, so they go on from where they were. */
 #bubbles.scrolling .spin { animation-play-state: paused; }
@@ -1860,6 +1862,7 @@ function soapUp(b) {
   function more() { if (!raf) raf = requestAnimationFrame(frame); }
   document.addEventListener("pointermove", function (e) {
     if (e.pointerType !== "mouse" || pm.hidden) return;   /* a finger or pen: no shine; nor without the practice window */
+    if (!document.getElementById("tour").hidden) return;   /* the tutorial is open: the spots stay still */
     px = e.clientX; py = e.clientY; on = !root.classList.contains("pf-noshine"); ask();   /* pf-noshine: the ?fps panel (95-perf.js) */
   }, { passive: true });
   document.documentElement.addEventListener("pointerleave", function () { on = false; ask(); });
@@ -2507,7 +2510,16 @@ applyLang();
     var back = from === "silent-letters" && history.length > 1;
     try { sessionStorage.setItem("eb-back", "1"); } catch (x) {}         // the menu skips its entrance animation
     document.documentElement.classList.add("eb-leaving");
-    var go = function () { if (back) history.back(); else location.href = MENU; };
+    // Safety net (2026-11-24, the user: after reopening the app in a game, Games sometimes left only the background
+    // on screen; the swipe-back gesture still worked): the phone can ignore history.back() from a script, so if this
+    // page is still here shortly after asking, open the menu directly (replace: Back won't return to the faded game).
+    var left = false;
+    window.addEventListener("pagehide", function () { left = true; }, { once: true });
+    var go = function () {
+      if (!back) { location.href = MENU; return; }
+      history.back();
+      setTimeout(function () { if (!left) location.replace(MENU); }, 800);
+    };
     // The menu's "open a game" pop + chime, played through the game's own tone() (so the game's volume and mute
     // apply); then leave once it has been heard.
     if (typeof tone === "function") {

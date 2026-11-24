@@ -904,6 +904,10 @@ body.picking .gslot:not(.filled) { animation: gapcall 1.2s ease-in-out infinite;
   opacity: 0;
 }
 body.carrying .sky span, body.calm .sky span { animation-play-state: paused; }
+/* While the tutorial or a window (Guide, Favorites / Seen, end card) is open (body.covered, 24-shine.js) the game behind
+   it stands still: the blur and dimming over it don't have to be redrawn on every frame (slow phones). The tutorial's
+   own bubbles keep moving. */
+body.covered :is(.sky span, #stage .w, #stage .spin, #stage .gslot) { animation-play-state: paused !important; }
 @keyframes skydrift {
   0% { transform: translate3d(0, 0, 0); opacity: 0; }
   8% { opacity: .6; }
@@ -3382,6 +3386,11 @@ if (window.IntersectionObserver) new IntersectionObserver(es => es.forEach(e => 
 let calmT = 0;
 function calmFor(ms) { if (reduceMotion) return; document.body.classList.add("calm"); clearTimeout(calmT); calmT = setTimeout(() => document.body.classList.remove("calm"), ms); }
 if (window.MutationObserver) new MutationObserver(() => calmFor(450)).observe(revealEl, { attributes: true, attributeFilter: ["hidden"] });
+// While the tutorial or a window (Guide, Favorites / Seen, end card: .favmodal) covers the game, everything behind it
+// stands still (body.covered: bobs, films, gap pulses, background bubbles, shine spots), so slow phones don't redraw
+// the blur over it on every frame
+function coverCheck() { document.body.classList.toggle("covered", !$("tour").hidden || !!document.querySelector(".favmodal.show")); }
+if (window.MutationObserver) { const mo = new MutationObserver(coverCheck); mo.observe($("tour"), { attributes: true, attributeFilter: ["hidden"] }); document.querySelectorAll(".favmodal").forEach(m => mo.observe(m, { attributes: true, attributeFilter: ["class"] })); }
 
 // While the page scrolls, the films pause (body.scrolling), from Silent Letters: scrolling
 // stays smooth, and they carry on 150 ms after it stops
@@ -3391,7 +3400,8 @@ window.addEventListener("scroll", () => { document.body.classList.add("scrolling
 /* The shine: each visible bubble's spot stays in its top-left corner and leans a little toward the cursor, the small
    spot moves the other way, the side facing the cursor glows as it nears. One listener; each frame eases one set of
    numbers per bubble and writes only the spans' transform / opacity; the loop stops once all have settled. With a
-   mouse always; with a finger only while a bubble is carried. Nothing with reduced motion. */
+   mouse always; with a finger only while a bubble is carried. Not while the tutorial or a window is open (body.covered); nothing
+   with reduced motion. */
 (function () {
   if (reduceMotion) return;
   let px = 0, py = 0, on = false, touch = false, raf = 0, last = 0, dirty = true, odd = false;
@@ -3466,6 +3476,7 @@ window.addEventListener("scroll", () => { document.body.classList.add("scrolling
   function ask() { dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
   function more() { if (!raf) raf = requestAnimationFrame(frame); }
   document.addEventListener("pointermove", e => {
+    if (document.body.classList.contains("covered")) return;   // the tutorial or a window is open: the spots stay where they are
     touch = e.pointerType !== "mouse";
     if (touch && !carried()) return;
     px = e.clientX; py = e.clientY; on = true; ask();
@@ -3646,7 +3657,16 @@ backLayer(tourEl, () => !tourEl.hidden, tourClose);   // the back gesture closes
     var back = from === "false-friends" && history.length > 1;
     try { sessionStorage.setItem("eb-back", "1"); } catch (x) {}         // the menu skips its entrance animation
     document.documentElement.classList.add("eb-leaving");
-    var go = function () { if (back) history.back(); else location.href = MENU; };
+    // Safety net (2026-11-24, the user: after reopening the app in a game, Games sometimes left only the background
+    // on screen; the swipe-back gesture still worked): the phone can ignore history.back() from a script, so if this
+    // page is still here shortly after asking, open the menu directly (replace: Back won't return to the faded game).
+    var left = false;
+    window.addEventListener("pagehide", function () { left = true; }, { once: true });
+    var go = function () {
+      if (!back) { location.href = MENU; return; }
+      history.back();
+      setTimeout(function () { if (!left) location.replace(MENU); }, 800);
+    };
     // The menu's "open a game" pop + chime, played through the game's own tone() (so the game's volume and mute
     // apply); then leave once it has been heard.
     if (typeof tone === "function") {

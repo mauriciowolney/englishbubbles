@@ -210,7 +210,7 @@ body {
   transition: opacity .55s ease; will-change: opacity; }
 .bgfade.go { opacity: 0; }
 
-/* The bubbles drifting up behind everything (from Be Do Modal / English Bubbles; made in 15-sky.js). Sizes use lvh (the
+/* The bubbles behind everything, held still (from Be Do Modal / English Bubbles; made in 15-sky.js). Sizes use lvh (the
    screen's height with the address bar hidden), not vh: on Android the address bar hides and shows while scrolling,
    which changed vh mid-flight and made every bubble jump (vh is the fallback). Only transform and opacity animate. */
 .sky { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
@@ -222,9 +222,10 @@ body {
   box-shadow: inset 0 0 14px hsla(var(--h), 95%, var(--sky-glow-l), var(--sky-glow-a));
   filter: blur(2px);   /* soft, out of focus: blurred once, then only moved */
   animation: skydrift var(--t, 30s) linear infinite; animation-delay: var(--d, 0s);
+  /* They hold still in this game (2026-11-24, for phones): paused, each stays where its delay puts it, part-way up */
+  animation-play-state: paused;
   opacity: 0;
 }
-body.calm .sky span { animation-play-state: paused; }   /* calm: while the bubbles glide or one opens / closes (calmFor, 00-util.js) */
 @keyframes skydrift {
   0% { transform: translate3d(0, 0, 0); opacity: 0; }
   8% { opacity: .6; }
@@ -630,9 +631,9 @@ main {
    theme are tokens in 00-base.css (--soap-*, --film-a, --srim-*, --sglow-*, --rimhi-*, --faceg-*). Built from spans
    (SOAP in 14-soap.js; the practice chips .sy too, 20-practice.css), added only to bubbles that come near the screen (630 bubbles: kept lazy, like the Portuguese),
    each drawn once: the film and the rim turn by rotating a still conic gradient (.spin, a transform animation, nothing
-   repainted), and what follows the mouse moves by transform / opacity only. Only bubbles on screen (.vis) turn and
-   get their own layers (will-change); the others hold still. Paint order, bottom to top: the film (.spin, the white
-   sheen ::before, the glow facing the mouse .fg, the inner glow ::after), the shine spot, the rim, the small spot,
+   repainted). Only bubbles on screen (.vis) turn; the others hold still. The shine follows the mouse (by transform /
+   opacity only) on the practice chips only (on the 630 word bubbles it was too taxing, 2026-11-24). Paint order, bottom to top: the film (.spin, the white
+   sheen ::before, the glow facing the mouse .fg on the chips, the inner glow ::after), the shine spot, the rim, the small spot,
    the word. */
 :is(.b, .sy) .film { position: absolute; inset: -1.5px; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
 :is(.b, .sy) .film::before { content: ""; position: absolute; inset: 0; z-index: 1;
@@ -656,7 +657,12 @@ main {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* While the bubbles glide or one opens / closes (body.calm, calmFor in 00-util.js) the turning pauses */
 body.calm :is(.b, .sy) .spin { animation-play-state: paused; }
-/* What follows the mouse: 14-soap.js writes the transform and opacity of these wrappers (at rest they are as here);
+/* While the practice window covers the page, the page's films hold still; while the tutorial is
+   open, everything behind it (2026-11-24, from Silent Letters / False Friend Bubbles): turning under frosted glass
+   dropped Silent Letters' window to ~20 fps (60 when paused). */
+html:has(#pmodal:not([hidden])) #bubbles .spin { animation-play-state: paused; }
+html:has(.tour:not([hidden])) :is(.spin, .m.roll .mi):not(.tour *) { animation-play-state: paused !important; }
+/* What follows the mouse (practice chips only): 14-soap.js writes the transform and opacity of these wrappers (at rest they are as here);
    the look is the <i> inside, so a wrapper has nothing to re-read when it moves. */
 .fg > i, .rh > i, .spot i, .glint > i { position: absolute; inset: 0; }
 .film .fg { position: absolute; left: -10%; top: -45%; width: 120%; height: 190%; z-index: 2; opacity: 0; }   /* inside, the side facing the mouse glows as it nears */
@@ -676,9 +682,13 @@ body.calm :is(.b, .sy) .spin { animation-play-state: paused; }
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 .rim .rh { position: absolute; left: -5%; top: -40%; width: 110%; height: 180%; opacity: 0; }   /* the side facing the mouse lights up as it nears */
 .rh > i { background: radial-gradient(closest-side, hsla(var(--th), 100%, var(--rimhi-l), var(--rimhi-a)), transparent); }
-/* only bubbles on screen get layers of their own for what moves */
-.b.vis .spot, .sy .spot { will-change: transform; }
-.b.vis .glint, .b.vis .fg, .b.vis .rh, .sy .glint, .sy .fg, .sy .rh { will-change: transform, opacity; }
+/* Only the few practice chips keep layers of their own for what moves (the shine). The word bubbles don't (2026-11-24,
+   as in Silent letters): four layers per on-screen bubble made scrolling stutter, and their spots hold still now. */
+.sy .spot { will-change: transform; }
+.sy .glint, .sy .fg, .sy .rh { will-change: transform, opacity; }
+/* While the page scrolls (#bubbles.scrolling, 14-soap.js: until 150 ms after the last scroll) the films pause too:
+   turning while scrolling made slow frames (Silent letters: 5-14 in 100, 0-4 paused). */
+#bubbles.scrolling .spin { animation-play-state: paused; }
 /* The spans never take the mouse: a fixed cursor, so a cursor change on the bubble restyles none of them */
 :is(.b, .sy) .film, :is(.b, .sy) .spot, :is(.b, .sy) .rim, :is(.b, .sy) .glint { cursor: default; }
 @media (prefers-reduced-motion: reduce) { .b.vis .spin, .sy .spin { animation: none; } }
@@ -1065,7 +1075,7 @@ var FAMILIES = DATA.families, SUFFIXES = DATA.suffixes;
 var COGNATES = DATA.intro.cognates, SEC_EXAMPLES = DATA.intro.secondary;
 var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 var host = document.getElementById("bubbles");
-// calmFor(ms): body.calm for that long — the turning films, the background bubbles and the shine pause (10-bubbles.css,
+// calmFor(ms): body.calm for that long — the turning films and the shine pause (10-bubbles.css,
 // 00-base.css, 14-soap.js) while something else moves: the glide to a new arrangement, a bubble opening or closing.
 var calmT = 0;
 function calmFor(ms) { document.body.classList.add("calm"); clearTimeout(calmT); calmT = setTimeout(function () { document.body.classList.remove("calm"); }, ms); }
@@ -1652,7 +1662,7 @@ function arrange(m, animate) {
       }
     });
   }
-  // While they glide, the turning films and the background bubbles pause (body.calm, 10-bubbles.css / 00-base.css).
+  // While they glide, the turning films pause (body.calm, 10-bubbles.css).
   if (anims.length) calmFor(SHUFFLE_MS + 50);
   if (animate) {
     // Start the sound when the first animation really starts playing, so the two line up even if the page was busy.
@@ -1960,12 +1970,16 @@ host.addEventListener("click", function (e) {
   say(b.dataset.word, b);
 });
 
-/* 14-soap.js — the soap-bubble look and its shine (2026-11-22, ported from Be Do Modal's 12-tray.js SOAP and 26-shine.js): the spans inside a bubble (added lazily, only to bubbles near the screen), .vis on the bubbles on screen (only they turn and have layers), and the shine that follows the mouse (each visible bubble, or the practice chips while the practice is open's spot leans toward the cursor, the small spot the other way, the side facing it glows). Look: end of 10-bubbles.css. Mouse only; nothing with reduced motion. */
-/* The film (.film: a turning colour layer .spin, the glow facing the mouse .fg), the shine spot (.spot, its brighter
-   core .pl), the rim (.rim: .spin + the bright side .rh) and the small spot (.glint). Spans, not backgrounds, so the
-   turning and the shine are only transform / opacity: the bubble itself is never restyled or repainted. What moves is a
-   bare wrapper and its look is the <i> inside. */
-var SOAP = '<span class="film" aria-hidden="true"><i class="spin"></i><i class="fg"><i></i></i></span>' +
+/* 14-soap.js — the soap-bubble look (2026-11-22, ported from Be Do Modal's 12-tray.js SOAP and 26-shine.js): the spans inside a bubble (added lazily, only to bubbles near the screen), .vis on the bubbles on screen (only they turn), the films' pause while the page scrolls, and the shine that follows the mouse — on the practice chips only (2026-11-24, as in Silent letters: on the word bubbles it was too taxing, their spots stay still). Look: end of 10-bubbles.css. Mouse only; nothing with reduced motion. */
+/* The film (.film: a turning colour layer .spin), the shine spot (.spot), the rim (.rim: a turning .spin) and the small
+   spot (.glint). Spans, not backgrounds, so the turning is only a transform: the bubble itself is never repainted.
+   The practice chips get SOAP_SHINE (22-practice-round.js, 24-practice-homo.js): the same plus what the shine moves:
+   the glow facing the mouse (.fg), the spot's brighter core (.pl) and the rim's bright side (.rh). What moves is a bare
+   wrapper and its look is the <i> inside. */
+var SOAP = '<span class="film" aria-hidden="true"><i class="spin"></i></span>' +
+  '<span class="spot" aria-hidden="true"><i></i></span>' +
+  '<span class="rim" aria-hidden="true"><i class="spin"></i></span><span class="glint" aria-hidden="true"><i></i></span>';
+var SOAP_SHINE = '<span class="film" aria-hidden="true"><i class="spin"></i><i class="fg"><i></i></i></span>' +
   '<span class="spot" aria-hidden="true"><i></i><i class="pl"><i></i></i></span>' +
   '<span class="rim" aria-hidden="true"><i class="spin"></i><i class="rh"><i></i></i></span><span class="glint" aria-hidden="true"><i></i></span>';
 function soapUp(b) {
@@ -1974,28 +1988,37 @@ function soapUp(b) {
   b.style.setProperty("--ang", Math.round(Math.random() * 360) + "deg");   /* each bubble's own start angle */
   b.classList.add("soap");
 }
-/* The bubbles on screen (shown, in no order), kept by one observer: a bubble that comes within NEAR px of the screen gets
-   its spans (once) and .vis; leaving, it loses .vis (no turning, no layers). shownVer changes with the list. */
-var shown = [], shownVer = 0;
+/* One observer: a bubble that comes within 150 px of the screen gets its spans (once) and .vis (its films turn);
+   leaving, it loses .vis. (630 bubbles: the rest get no spans until they come near, unlike Silent letters' idle fill.) */
 (function () {
   if (!window.IntersectionObserver) { items.forEach(function (it) { soapUp(it.el); }); return; }
   var obs = new IntersectionObserver(function (es) {
     es.forEach(function (e) {
-      var b = e.target, i = shown.indexOf(b);
-      if (e.isIntersecting) { soapUp(b); b.classList.add("vis"); if (i < 0) shown.push(b); }
-      else { b.classList.remove("vis"); if (i >= 0) shown.splice(i, 1); if (b._sh) { soapRest(b._sh.el); b._sh = null; } }
+      if (e.isIntersecting) { soapUp(e.target); e.target.classList.add("vis"); }
+      else e.target.classList.remove("vis");
     });
-    shownVer++;
   }, { rootMargin: "150px 0px" });
   items.forEach(function (it) { obs.observe(it.el); });
 })();
-function soapRest(e) { [e.sp, e.pl, e.gl, e.fg, e.rh].forEach(function (n) { n.style.transform = n.style.opacity = ""; }); e.w = {}; }
-/* The shine. One listener; each frame eases one set of numbers per visible bubble toward the cursor (so spots and glow
+/* While the page scrolls (until 150 ms after the last scroll) the films pause (#bubbles.scrolling, 10-bubbles.css; on
+   #bubbles, not body, so less is restyled): turning while scrolling made Silent letters stutter. Paused, not stopped,
+   so they go on from where they were. */
+(function () {
+  if (reduce) return;
+  var scrolling = false, scrollT = 0;
+  window.addEventListener("scroll", function () {
+    clearTimeout(scrollT);
+    if (!scrolling) { scrolling = true; host.classList.add("scrolling"); }
+    scrollT = setTimeout(function () { scrolling = false; host.classList.remove("scrolling"); }, 150);
+  }, { passive: true });
+})();
+/* The shine, on the practice chips only. One listener, only while the practice window is open; each frame eases one set of numbers per chip toward the cursor (so spots and glow
    move as one) and writes the transform / opacity of the spans; the loop stops once all have settled. Positions are
    measured at most every RECT_MS, and unchanged bubbles get no writes. */
 (function () {
   if (reduce) return;
   var px = 0, py = 0, on = false, raf = 0, last = 0, dirty = true;
+  var pm = document.getElementById("pmodal");   /* the practice window (pModal is set later, in 20-practice.js) */
   var rcache = null, rver = -1, rlist = 0, rtime = 0, RECT_MS = 250;
   /* the spot leans at most RIGHT / DOWN of the bubble's height toward the cursor, LEFT / UP the other way (the rounded
      corner is near); from NEAR0 of that (cursor far) to all of it (cursor on it); FALL = how quickly it fades */
@@ -2022,9 +2045,8 @@ function soapRest(e) { [e.sp, e.pl, e.gl, e.fg, e.rh].forEach(function (n) { n.s
     if (document.body.classList.contains("calm")) { last = 0; setTimeout(more, 120); return; }   /* paused while a bubble opens or the bubbles glide (calmFor, 00-util.js) */
     var f = 1 - Math.pow(1 - EASE, Math.min(4, (now - (last || now - 16.7)) / 16.7));   /* the same easing at any frame rate */
     last = now;
-    /* the word bubbles on screen, or the practice chips while the practice window is open (it covers the bubbles) */
-    var chips = pModal.hidden ? null : pModal.querySelectorAll(".sy.soap");
-    var bs = chips ? [].slice.call(chips) : shown, ver = chips ? "c" + chips.length + (chips[0] && chips[0].dataset.k) + pi : shownVer;
+    if (pm.hidden) { last = 0; return; }   /* the practice window is closed: no chips */
+    var bs = [].slice.call(pm.querySelectorAll(".sy.soap")), ver = "c" + bs.length + (bs[0] && bs[0].dataset.k) + pi;
     var rs, i, r, b, st, t, dx, dy, d, k, moving = false;
     if (rcache && rver === ver && rlist === bs.length && now - rtime < RECT_MS) rs = rcache;
     else { rs = []; for (i = 0; i < bs.length; i++) rs.push(bs[i].getBoundingClientRect()); rcache = rs; rver = ver; rlist = bs.length; rtime = now; }   /* reads first, then the writes */
@@ -2062,22 +2084,23 @@ function soapRest(e) { [e.sp, e.pl, e.gl, e.fg, e.rh].forEach(function (n) { n.s
   function ask() { dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
   function more() { if (!raf) raf = requestAnimationFrame(frame); }
   document.addEventListener("pointermove", function (e) {
-    if (e.pointerType !== "mouse") return;   /* a finger or pen: no shine (nothing is carried in this game) */
+    if (e.pointerType !== "mouse" || pm.hidden) return;   /* a finger or pen: no shine; nor without the practice window */
+    if (!document.getElementById("tour").hidden) return;   /* the tutorial is open: the spots stay still */
     px = e.clientX; py = e.clientY; on = !root.classList.contains("pf-noshine"); ask();   /* pf-noshine: the ?fps panel (95-perf.js) */
   }, { passive: true });
   document.documentElement.addEventListener("pointerleave", function () { on = false; ask(); });
-  window.addEventListener("scroll", function () { rcache = null; if (on) ask(); }, { passive: true });
+  pm.addEventListener("scroll", function () { rcache = null; if (on) ask(); }, { passive: true, capture: true });   /* the practice card scrolls */
   window.addEventListener("resize", function () { rcache = null; }, { passive: true });
 })();
 
-/* 15-sky.js — the bubbles drifting up behind everything (2026-11-22, ported from Be Do Modal's 06-sky.js): 7 see-through, softly blurred bubbles of random size (40-140 px), place and pace (95-145 s a climb). At page load they are already part-way up and the layer fades in (.sky.in). Only transform / opacity move; they pause while the word bubbles glide (body.calm) and are left out with reduced motion. Look: .sky in 00-base.css. */
+/* 15-sky.js — the bubbles behind everything (2026-11-22, ported from Be Do Modal's 06-sky.js): 7 see-through, softly blurred bubbles of random size (40-140 px) and place, each part-way up its climb. They hold still in this game (2026-11-24, for phones: the climb is paused in 00-base.css); the layer fades in (.sky.in). Left out with reduced motion. Look: .sky in 00-base.css. */
 (function () {
   var sky = document.getElementById("sky");
   if (!sky || reduce) return;
   var hues = [215, 330, 150, 265, 30, 190];
   for (var k = 0; k < 7; k++) {
     var s = document.createElement("span"), size = 40 + Math.round(Math.random() * 100), t = 95 + Math.round(Math.random() * 50);
-    var at = (0.15 + 0.65 * (k + Math.random() * 0.8) / 7) * t;   /* a negative delay starts the climb part-way: 15% to 80% of the way up */
+    var at = (0.15 + 0.65 * (k + Math.random() * 0.8) / 7) * t;   /* a negative delay puts it part-way up its (paused) climb: 15% to 80% of the way */
     s.style.cssText = "width:" + size + "px;height:" + size + "px;left:" + Math.round(Math.random() * 96) + "%;" +
       "--h:" + hues[k % hues.length] + ";--t:" + t + "s;--d:-" + at.toFixed(1) + "s;" +
       "--x:" + Math.round(Math.random() * 80 - 40) + "px";
@@ -2293,7 +2316,7 @@ function renderWord() {
   pRoundEl.textContent = roundLabel();
   var chips = syl.map(function (x, i) {
     return (i ? '<span class="dot" aria-hidden="true">·</span>' : "") +
-      '<button type="button" class="sy soap" style="--i:' + i + ';--ang:' + Math.round(Math.random() * 360) + 'deg" data-k="' + x.k + '">' + SOAP + '<span class="syt">' + esc(x.t) + "</span></button>";
+      '<button type="button" class="sy soap" style="--i:' + i + ';--ang:' + Math.round(Math.random() * 360) + 'deg" data-k="' + x.k + '">' + SOAP_SHINE + '<span class="syt">' + esc(x.t) + "</span></button>";
   }).join("");
   pBody.innerHTML = '<div class="pslide' + (mem ? " mem" : "") + '" style="--h:' + h + '">' +
     (mem ? '<div class="pmem">' + ICON_BRAIN + tx("memBadge") + "</div>" : "") +
@@ -2546,7 +2569,7 @@ function renderHomo() {
   var sent = esc(h.sentences[it.f]).replace("{" + h.word + "}", '<b class="hword">' + esc(h.word) + "</b>");
   var trs = h.str && h.str[curLang] ? esc(h.str[curLang][it.f]).replace(/\{([^}]*)\}/, "<b>$1</b>") : ""; // the sentence translated
   var opts = h.forms.map(function (f, i) {
-    return '<button type="button" class="sy hopt soap" style="--i:' + i + ';--ang:' + Math.round(Math.random() * 360) + 'deg" data-k="' + (i === it.f ? 1 : 0) + '" data-i="' + i + '">' + SOAP + '<span class="syt">' + esc(capsForm(f)) + "</span></button>";
+    return '<button type="button" class="sy hopt soap" style="--i:' + i + ';--ang:' + Math.round(Math.random() * 360) + 'deg" data-k="' + (i === it.f ? 1 : 0) + '" data-i="' + i + '">' + SOAP_SHINE + '<span class="syt">' + esc(capsForm(f)) + "</span></button>";
   }).join("");
   pBody.innerHTML = '<div class="pslide homo" style="--h:' + hue + '">' +
     '<div class="pmem phomo">' + tx("homoBadge") + "</div>" +
@@ -2793,7 +2816,7 @@ applyUi();
   var touchDev = !!(window.matchMedia && matchMedia("(hover: none)").matches);
   var SW = [   /* [id, label, on at the start] */
     ["film", "Film turning", !touchDev && !reduce],   /* off on touch screens (10-bubbles.css): the switch can turn it on there */
-    ["shine", "Shine", !reduce],
+    ["shine", "Shine (practice chips)", !reduce],
     ["sky", "Background bubbles", !reduce],
     ["blur", "Frosted glass", true]
   ];
@@ -2872,7 +2895,16 @@ applyUi();
     var back = from === "stressed-syllables" && history.length > 1;
     try { sessionStorage.setItem("eb-back", "1"); } catch (x) {}         // the menu skips its entrance animation
     document.documentElement.classList.add("eb-leaving");
-    var go = function () { if (back) history.back(); else location.href = MENU; };
+    // Safety net (2026-11-24, the user: after reopening the app in a game, Games sometimes left only the background
+    // on screen; the swipe-back gesture still worked): the phone can ignore history.back() from a script, so if this
+    // page is still here shortly after asking, open the menu directly (replace: Back won't return to the faded game).
+    var left = false;
+    window.addEventListener("pagehide", function () { left = true; }, { once: true });
+    var go = function () {
+      if (!back) { location.href = MENU; return; }
+      history.back();
+      setTimeout(function () { if (!left) location.replace(MENU); }, 800);
+    };
     // The menu's "open a game" pop + chime, played through the game's own tone() (so the game's volume and mute
     // apply); then leave once it has been heard.
     if (typeof tone === "function") {
