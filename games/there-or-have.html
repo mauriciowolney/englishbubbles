@@ -108,6 +108,8 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
       return set.call(this, this === L ? P + k : k, v);
     };
     S.removeItem = function (k) { return del.call(this, this === L ? P + k : k); };
+    /* The app's own keys (eb-rounds, eb-don…) and language, for the injected donation script (donate.js) */
+    window.ebApp = { get: function (k) { return get.call(L, k); }, set: function (k, v) { set.call(L, k, v); }, lang: appLang };
     /* Opened from the menu (a card or Continue)? Then the game starts at the menu's level ("My level"): the menu
        leaves a one-time note (sessionStorage eb-level-go), and the matching level is saved under the game's own
        level key before the game reads it (games.json "level"; the nearest level when the game doesn't have it).
@@ -126,10 +128,10 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="English Bubbles">
-<link rel="manifest" href="../manifest.json?v=6d0cce7c">
-<link rel="icon" href="../icons/favicon-32.png?v=6d0cce7c" sizes="32x32" type="image/png">
-<link rel="icon" href="../icons/favicon-64.png?v=6d0cce7c" sizes="64x64" type="image/png">
-<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png?v=6d0cce7c">
+<link rel="manifest" href="../manifest.json?v=a551d7bb">
+<link rel="icon" href="../icons/favicon-32.png?v=a551d7bb" sizes="32x32" type="image/png">
+<link rel="icon" href="../icons/favicon-64.png?v=a551d7bb" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png?v=a551d7bb">
 <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>There or Have</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -279,9 +281,19 @@ button { font-family: inherit; }
 .volwrap { position: relative; display: flex; justify-content: center; }
 .volp { position: absolute; top: calc(100% + 10px); left: 50%; z-index: 30; display: flex; align-items: center; padding: 10px 16px; border-radius: 24px; background: var(--bg-a); border: 1px solid var(--dock-line); box-shadow: 0 10px 26px var(--shadow); opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(-6px) scale(.5,.8); transform-origin: top center; transition: opacity .2s ease, transform .25s cubic-bezier(.34,1.56,.64,1), visibility 0s linear .25s; }
 .volp::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+.volp { flex-direction: column; align-items: stretch; gap: 6px; }   /* two rows: effects, voice (2026-11-25) */
+.volr { display: flex; align-items: center; gap: 10px; font-size: .8rem; white-space: nowrap; cursor: pointer; }
+.volr span { flex: 1; opacity: .75; }
+.volwrap.muted .volr { opacity: .45; }   /* muted by the speaker: the levels are kept, moving a slider unmutes */
 .volp input { width: 140px; margin: 0; cursor: pointer; accent-color: hsl(300,70%,58%); }
 .volwrap.open .volp { opacity: 1; visibility: visible; transform: translateX(-50%); transition-delay: 0s; }
 @media (hover: hover) { .volwrap:hover .volp { opacity: 1; visibility: visible; transform: translateX(-50%); transition-delay: 0s; } }
+@media (max-width: 600px) {   /* on a phone the labelled rows hang left from the speaker's right edge, inside the screen */
+  .volp { left: auto; right: 0; padding: 10px 12px; transform: translateY(-6px) scale(.5, .8); transform-origin: top right; }
+  .volp input { width: 100px; }
+  .volwrap.open .volp { transform: none; }
+}
+@media (max-width: 600px) and (hover: hover) { .volwrap:hover .volp { transform: none; } }
 .sw { display: flex; align-items: center; gap: 8px 0; }   /* the circles are spaced by margins, not the gap, so the picker row adds nothing to the pop-over's width */
 .sw > button + button { margin-left: 8px; }
 .sw button {
@@ -1150,7 +1162,7 @@ body.covered :is(.pt .sfx, .lit .sfx, .wb, .spin, .bcloud .bw, .sky span):not(.t
   <button type="button" class="tourbtn listbtn" id="seenbtn" aria-label="Vistas" title="Vistas"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg><span id="seenbtnlbl">Vistas</span></button>
   <button type="button" class="tourbtn" id="tour-btn" aria-label="Tutorial" title="Tutorial: a one-minute tour"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4"/><circle cx="12" cy="17.6" r=".6" fill="currentColor"/></svg><span>Tutorial</span></button>
   <div class="tools">
-    <span class="volwrap" id="volwrap"><button type="button" id="snd" aria-pressed="true" aria-label="Volume" title="Volume"></button><span class="volp"><input type="range" id="vol" min="0" max="100" step="1" aria-label="Volume"></span></span>
+    <span class="volwrap" id="volwrap"><button type="button" id="snd" aria-pressed="true" aria-label="Volume" title="Volume"></button><span class="volp"><label class="volr"><span id="vol-eff">Effects</span><input type="range" id="vol" min="0" max="100" step="1" aria-label="Sound effects volume"></label><label class="volr"><span id="vol-voi">Voice</span><input type="range" id="vvol" min="0" max="100" step="1" aria-label="Voice volume"></label></span></span>
     <div class="swwrap" id="swwrap">
       <button type="button" class="swbtn" id="swbtn" aria-label="Background color" aria-expanded="false" title="Background color"></button>
       <div class="sw" id="swatches" role="group" aria-label="Background color"></div>
@@ -2254,7 +2266,13 @@ swbtn.addEventListener("click", function () { var o = swwrap.classList.toggle("o
 /* ---------- Sound (synthesised, no files) ---------- */
 var ac = null, soundOn = true, mg = null;
 var vol = parseInt(load("th-vol"), 10); if (isNaN(vol)) vol = 55;
-var prevVol = vol > 0 ? vol : 55;
+/* 2026-11-25: two sliders, effects (vol, th-vol) and voice (voiceVol, th-vvol); the speaker mutes both (th-snd = "0"),
+   keeping the levels. Before, muting set th-vol to 0 and had no key of its own: such a player starts muted, at 55. */
+var muted = load("th-snd") === "0";
+if (load("th-snd") === null && vol === 0) { muted = true; vol = 55; }
+var voiceVol = (function () { var v = parseInt(load("th-vvol"), 10); return v >= 0 && v <= 100 ? v : 100; })();
+// The voice's loudness for a clip or the browser voice, 0 to 1 (squared): 0 when muted or at 0.
+function voiceGain() { return muted ? 0 : Math.pow(voiceVol / 100, 2); }
 function makeAc() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
 function ctx() { makeAc(); if (ac && ac.state === "suspended") ac.resume(); return ac; }
 /* Starting the audio system blocks the page for ~0.2 s, so the first answer of every visit froze that long (found in
@@ -2282,25 +2300,40 @@ function sndNew() { [[280, 0], [350, .1], [440, .2]].forEach(function (n, k) { t
 var ICON_ON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
 var ICON_OFF = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>';
 var ICON_LOW = ICON_ON.replace('<path d="M18.5 5.5a9 9 0 0 1 0 13"/>', '');
-var volwrap = $("volwrap"), volEl = $("vol"), sndBtn = $("snd");
-function applyVol(v) {
-  vol = Math.max(0, Math.min(100, v)); soundOn = vol > 0; if (vol > 0) prevVol = vol; volEl.value = vol; store("th-vol", vol);
+var volwrap = $("volwrap"), volEl = $("vol"), vvolEl = $("vvol"), sndBtn = $("snd");
+function applyVol() {
+  soundOn = !muted && vol > 0; volEl.value = vol; vvolEl.value = voiceVol;
+  store("th-vol", vol); store("th-vvol", voiceVol); store("th-snd", muted ? "0" : "1");
   if (mg) mg.gain.setTargetAtTime(vol / 100 * 3, mg.context.currentTime, .02);
-  sndBtn.innerHTML = vol === 0 ? ICON_OFF : vol < 40 ? ICON_LOW : ICON_ON; sndBtn.setAttribute("aria-pressed", vol > 0);
+  var top = muted ? 0 : Math.max(vol, voiceVol);
+  sndBtn.innerHTML = top === 0 ? ICON_OFF : top < 40 ? ICON_LOW : ICON_ON; sndBtn.setAttribute("aria-pressed", top > 0);
+  volwrap.classList.toggle("muted", muted);
+  if (clipEl) clipEl.volume = voiceGain();   // a clip that is playing follows the voice slider
 }
-volEl.addEventListener("input", function () { applyVol(parseInt(volEl.value, 10)); });
-volEl.addEventListener("change", function () { ctx(); sndOk(); });
+volEl.addEventListener("input", function () { vol = parseInt(volEl.value, 10) || 0; muted = false; applyVol(); });
+volEl.addEventListener("change", function () { if (soundOn) { ctx(); sndOk(); } });
+vvolEl.addEventListener("input", function () { voiceVol = parseInt(vvolEl.value, 10) || 0; muted = false; applyVol(); });
+/* Releasing the voice slider reads the shortest sentence that has a recorded clip (found once). */
+var volSample = null;
+vvolEl.addEventListener("change", function () {
+  if (!voiceGain()) return;
+  if (!volSample) S.forEach(function (s) { var c = clipOf(s), t = c && full(s); if (t && (!volSample || t.length < volSample[0].length)) volSample = [t, c]; });
+  if (volSample) say(volSample[0], volSample[1]); else say("Hello!");
+});
 sndBtn.addEventListener("click", function () {
   var open = volwrap.classList.contains("open") || (canHover && volwrap.matches(":hover"));
   if (!open) { volwrap.classList.add("open"); return; }
-  applyVol(vol > 0 ? 0 : prevVol); if (vol > 0) { ctx(); sndOk(); }
+  muted = !muted;
+  if (!muted && !vol && !voiceVol) { vol = 55; voiceVol = 100; }   // unmuting with both at 0 brings both back
+  if (muted) hush();
+  applyVol(); if (soundOn) { ctx(); sndOk(); }
 });
 document.addEventListener("click", function (e) {
   if (!e.target.isConnected) return;
   if (!volwrap.contains(e.target)) volwrap.classList.remove("open");
   if (!swwrap.contains(e.target)) { swwrap.classList.remove("open"); swbtn.setAttribute("aria-expanded", "false"); closePicker(); }
 });
-applyVol(vol);
+applyVol();
 
 /* ---------- Back gesture (copied from Verb Bubbles, ../bedomodal, 07-back.js) ---------- */
 /* The phone's Back / the browser's Back closes the open window (Streaks, end card, Favoritas / Vistas, tutorial, Play
@@ -2358,7 +2391,7 @@ function playClip(text, clip) {
   var seq = ++ttsSeq, a = new Audio(AUDIO_DIR + clip), failed = false;
   var fail = function () { if (failed || seq !== ttsSeq) return; failed = true; clipBad[clip] = 1; clipEl = null; sayTts(text); };
   a.preservesPitch = true; a.mozPreservesPitch = true; a.webkitPreservesPitch = true;
-  a.defaultPlaybackRate = a.playbackRate = clipRate(); a.volume = Math.min(1, vol / 55);
+  a.defaultPlaybackRate = a.playbackRate = clipRate(); a.volume = voiceGain();
   a.onerror = fail;
   clipEl = a;
   try {
@@ -2368,7 +2401,7 @@ function playClip(text, clip) {
   } catch (e) { fail(); }
 }
 function say(text, clip) {
-  if (!soundOn) return;
+  if (!voiceGain()) { hush(); return; }   // the voice is off (04-sound.js): only the voice slider and the mute count
   if (clip && !clipBad[clip]) playClip(text, clip); else sayTts(text);
 }
 /* ---------- The browser's voice (the fallback) ---------- */
@@ -2383,7 +2416,7 @@ if (tts) { try { pickVoice(); if ("onvoiceschanged" in tts) tts.onvoiceschanged 
    queue, wait a beat after cancel, and if nothing has started within ~1s, reset the engine and try again (twice more). */
 var ttsLive = null, ttsSeq = 0;
 function sayTts(text, tries) {
-  if (!tts || !soundOn) return;
+  if (!tts || !voiceGain()) return;
   tries = tries || 0;
   var seq = ++ttsSeq;
   try {
@@ -2393,7 +2426,7 @@ function sayTts(text, tries) {
     /* Slower for A1. Edge's "Natural"/"Online" voices speak faster than others at the same rate, so they get slowed a bit more. */
     var r = (level === "A1" ? .72 : .86) * (slowVoice ? .75 : 1);
     if (ttsVoice && /natural|online/i.test(ttsVoice.name)) r *= .88;
-    u.rate = r; u.volume = Math.min(1, vol / 55);
+    u.rate = r; u.volume = voiceGain();
     var started = false;
     u.onstart = function () { started = true; };
     u.onerror = function () { started = true; };
@@ -3558,13 +3591,13 @@ hintBtn.addEventListener("click", function () {
   fbEl.className = "fb"; fbEl.innerHTML = '<span class="tip" dir="auto">' + esc(fbt()[2].replace("{f}", f.cap).replace("{l}", f.w.filter(okWord).map(function (w) { return lab(w, cur.k); }).filter(Boolean).join(", "))) + '</span>';
   hintBtn.disabled = true;
 });
-sayBtn.addEventListener("click", function () { if (cur) { var s = soundOn; soundOn = true; say(full(cur), clipOf(cur)); soundOn = s; } });
+sayBtn.addEventListener("click", function () { if (cur) say(full(cur), clipOf(cur)); });
 /* Turtle: an extra-slow voice for anyone who wants it (both levels, remembered). Pressing it after answering replays the sentence. */
 var slowVoice = load("th-slow") === "1", SLOWT = { portuguese: "Fala mais lenta", spanish: "Voz más lenta", french: "Voix plus lente", japanese: "ゆっくり読む", chinese: "慢速朗读" };
 function paintSlow() { var b = $("slowbtn"), t = SLOWT[rl] || SLOWT.portuguese; b.setAttribute("aria-pressed", slowVoice); b.title = t; b.setAttribute("aria-label", t); }
 $("slowbtn").addEventListener("click", function () {
   slowVoice = !slowVoice; store("th-slow", slowVoice ? "1" : "0"); paintSlow(); popEl($("slowbtn"));
-  if (cur && locked) { var s0 = soundOn; soundOn = true; say(full(cur), clipOf(cur)); soundOn = s0; } else tone(slowVoice ? 392 : 523.25, 0, .12, .04);
+  if (cur && locked) say(full(cur), clipOf(cur)); else tone(slowVoice ? 392 : 523.25, 0, .12, .04);
 });
 paintSlow();
 
@@ -4094,7 +4127,7 @@ var TT = {
     ["Afirmativas, negativas e perguntas", "Este botão escolhe o tipo de frase: todas (<b>+ – ?</b>), só afirmativas (<b>+</b>), só negativas (<b>–</b>) ou só perguntas (<b>?</b>). As bolhas mudam de forma: <i>there is</i> vira <i>there isn't</i> ou <i>is there</i>, e <i>has</i> vira <i>doesn't have</i>."],
     ["Frases vistas", "Em <b>Vistas</b> ficam as <b>últimas 30 frases</b> que você respondeu (<b>Recentes</b>) e as que você errou (<b>Erros</b>). Toque em <b>Praticar estas</b> para uma partida com as frases da aba aberta."],
     ["Guarde suas favoritas", "Toque na <b>estrela</b> no canto da frase para guardá-la. Elas ficam no botão <b>Favoritas</b> lá em cima, onde você também pode praticá-las."],
-    ["Do seu jeito", "Ajuste o <b>volume</b> ou desligue os sons, e escolha uma <b>cor de fundo</b>. Este tour fica sempre a um toque, no botão <b>TUTORIAL</b>."],
+    ["Do seu jeito", "Dois controles de <b>volume</b>: um para os efeitos sonoros, outro para a voz. Toque no alto-falante de novo para silenciar tudo. Escolha também uma <b>cor de fundo</b>. Este tour fica sempre a um toque, no botão <b>TUTORIAL</b>."],
     ["Tudo pronto!", "Leia a frase, veja se ela tem sujeito e coloque a bolha certa no espaço. Boa sorte!"]] }
 };
 function tt() { return TT[rl] || TT.portuguese; }
@@ -4468,6 +4501,9 @@ newRound();
 .eb-home:hover, .eb-home:focus-visible { transform: translateY(-2px) scale(1.05); box-shadow: inset 0 0 14px hsla(var(--eb-h), 95%, 80%, .6), 0 8px 16px rgba(60,70,140,.2); }
 .eb-home:active { transform: scale(.94); }
 .eb-home:focus-visible { outline: 2px solid #e0558a; outline-offset: 3px; }
+.eb-home.eb-side { position: absolute; top: calc(50% - 17px); }   /* desktop: pinned at the bar's far left */
+.eb-c1 .seg-cap { display: none !important; }                   /* desktop, only if the bar would wrap */
+.eb-c2 .seg.focus button { font-size: .8rem !important; padding-left: .7em !important; padding-right: .7em !important; }
 .eb-home.eb-float { position: fixed; z-index: 2147483000; left: calc(env(safe-area-inset-left, 0px) + 10px); top: calc(env(safe-area-inset-top, 0px) + 10px); }
 @media (max-width: 640px) { .eb-home { padding: 0; width: 34px; } .eb-home span { display: none; } }
 /* tight mode (only when the button would otherwise add a row to the header): a little less space between controls */
@@ -4516,7 +4552,8 @@ newRound();
       setTimeout(go, 240);
     } else go();
   });
-  // In the game's header (the "dock"). The header must never get an extra row because of this button (phones: at
+  // In the game's header (the "dock"). On desktop: always first (far left), see place(). On phones / narrow
+  // windows the header must never get an extra row because of this button (phones: at
   // most two rows, the user's rule, 2026-11-17). So every place is tried, in order of preference: before the level
   // pills, right after them, then before / after each control, then inside a group of buttons (Verb Wheel's
   // .tools); the place that gives the shortest header wins (the first one on a tie). If every place still adds a
@@ -4556,8 +4593,36 @@ newRound();
     tightened = on ? [dock, a, a.parentNode] : [];
     tightened.forEach(function (el) { el.classList.add("eb-tight"); });
   }
+  // Desktop (2026-11-25, the user): the button ALWAYS sits at the far left of the header (its first item).
+  // When the header wraps onto two rows, the games centre each row, so being first isn't enough: the button is
+  // pinned to the bar's left side (vertically centred) and the bar gets that much more room on its left.
+  var desk = window.matchMedia ? matchMedia("(min-width: 761px)") : null;
+  function compact(k) {
+    dock.classList.remove("eb-c1", "eb-c2");
+    if (k >= 1) dock.classList.add("eb-c1");
+    if (k >= 2) dock.classList.add("eb-c2");
+  }
+  function side(on) {
+    a.classList.remove("eb-side"); a.style.left = ""; dock.style.paddingLeft = "";
+    if (!on) return;
+    var cs = getComputedStyle(dock), pl = parseFloat(cs.paddingLeft) || 0, gap = parseFloat(cs.columnGap) || 12;
+    if (cs.position === "static") dock.style.position = "relative";
+    a.classList.add("eb-side"); a.style.left = pl + "px";
+    dock.style.paddingLeft = (pl + a.offsetWidth + gap) + "px";
+  }
   function place() {
     tight(false);
+    side(false); compact(0);
+    if (desk && desk.matches) {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      var h0 = height();                                     // the header as the game made it
+      dock.insertBefore(a, dock.firstElementChild); side(true);
+      // the button must not add a row (2026-11-25, Prepositions wrapped at 1280 px): first drop the "Practice"
+      // caption (.seg-cap), then also make the topic buttons (.seg.focus) a little smaller
+      for (var k = 1; k <= 2 && height() > h0 + 4; k++) { compact(k); side(true); }
+      if (height() > h0 + 4) { compact(0); side(true); }    // nothing helps: keep the game's look
+      return;
+    }
     var at = a.parentNode ? [a.parentNode, a.nextSibling] : null;
     if (a.parentNode) a.parentNode.removeChild(a);
     var base = height();                                     // the header as the game made it
@@ -4584,6 +4649,296 @@ newRound();
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(function () {});
   }
+})();
+</script>
+<style>
+/* donate.css — the PIX panel and the games' "Support it" line (donate.js). In the menu and in every game, so it uses
+   only the tokens both share (--ink, --dock-bg, --dock-line, --underline, --bg-a; fallbacks for safety) and its own
+   class names (the games have their own .l-en / .l-pt). Look: the tour card's frosted glass and the games' dimming. */
+.ebd-l .ebd-pt { display: none; }
+.ebd-l[data-lang="pt"] .ebd-pt { display: inline; }
+.ebd-l[data-lang="pt"] .ebd-en { display: none; }
+.ebd {
+  position: fixed; inset: 0; z-index: 2147483100; display: grid; place-items: center; padding: 16px;
+  background: rgba(8, 12, 36, .62); animation: ebd-fade .25s ease-out;
+  font-family: "Fredoka", ui-rounded, system-ui, sans-serif; color: var(--ink, #26385c); text-align: center;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.ebd[hidden] { display: none; }
+html.ebd-open { overflow: hidden; overscroll-behavior: none; }
+@keyframes ebd-fade { from { opacity: 0; } }
+.ebd-card {
+  position: relative; box-sizing: border-box; width: min(380px, 100%); max-height: calc(100dvh - 32px); overflow: auto;
+  display: flex; flex-direction: column; align-items: center; gap: .6rem;
+  padding: 1.3rem 1.2rem 1.05rem; border-radius: 1.4rem;
+  background: var(--dock-bg, rgba(255,255,255,.62)); border: 1px solid var(--dock-line, rgba(120,140,200,.25));
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, .3);
+  animation: ebd-in .34s cubic-bezier(.2,.9,.3,1.15); overscroll-behavior: contain;
+}
+@keyframes ebd-in { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+.ebd button { font: inherit; margin: 0; cursor: pointer; -webkit-appearance: none; appearance: none; text-transform: none; letter-spacing: normal; }
+.ebd button:focus-visible { outline: 2px solid var(--underline, #e0558a); outline-offset: 3px; }
+.ebd-x {
+  position: absolute; top: .2rem; right: .2rem; width: 2.9rem; height: 2.9rem; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.55rem !important; line-height: 1; color: inherit; background: transparent;
+}
+.ebd-t { margin: .1rem 2rem 0; font: 600 1.25rem/1.25 "Fredoka", ui-rounded, system-ui, sans-serif; color: inherit; text-wrap: balance; }
+.ebd-hrt { display: block; margin: 0 auto .35rem; width: 38px; height: 38px; border-radius: 50%; color: #fff;
+  background: linear-gradient(135deg, #ff5ea8, #c04dff 55%, #8a5cff); box-shadow: 0 3px 9px rgba(200, 77, 255, .3); }
+.ebd-hrt svg { display: block; margin: 10px auto 0; }
+.ebd p { margin: 0; font-size: .96rem; line-height: 1.45; color: inherit; }
+.ebd-p { text-wrap: balance; }
+.ebd-amts { display: flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--dock-line, rgba(120,140,200,.25)); }
+.ebd-amts button { border: 0; border-radius: 999px; padding: .55em 1em; font-size: .95rem; font-weight: 600; color: inherit; background: transparent;
+  transition: background-color .2s ease, color .2s ease; }
+.ebd-amts button[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, #ff5ea8, #c04dff 55%, #8a5cff); box-shadow: 0 3px 9px rgba(200, 77, 255, .22); }
+.ebd-qr { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+.ebd-qr svg { display: block; width: 176px; height: 176px; border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+.ebd-qr small { font-size: .8rem; opacity: .75; }
+.ebd-show { border: 0; background: none; padding: 2px 4px; font-size: .88rem !important; color: inherit; text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--underline, #e0558a); display: none; }
+/* phones (no mouse): the QR is for another device, so it waits behind "Show QR code"; the copy button comes first */
+@media (hover: none) {
+  .ebd-qr { display: none; }
+  .ebd.qr-on .ebd-qr { display: flex; }
+  .ebd-show { display: inline-block; }
+  .ebd.qr-on .ebd-show { display: none; }
+}
+.ebd-copy { border: 0; border-radius: 999px; padding: .8em 1.4em; font-size: 1rem; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, #ff5ea8, #c04dff 55%, #8a5cff); box-shadow: 0 3px 9px rgba(200, 77, 255, .22);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+.ebd-copy:active { transform: scale(.96); }
+.ebd-done b { color: var(--underline, #e0558a); font-weight: 600; }
+.ebd-any { font-size: .88rem !important; opacity: .8; }
+.ebd-code { box-sizing: border-box; width: 100%; resize: none; font: .72rem/1.35 ui-monospace, monospace; padding: .5em; border-radius: 10px;
+  border: 1px solid var(--dock-line, rgba(120,140,200,.25)); background: rgba(255,255,255,.5); color: #111; word-break: break-all; }
+.ebd-who { font-size: .8rem !important; opacity: .7; }
+.ebd-later { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 14px; }
+.ebd-later[hidden] { display: none; }
+.ebd-later button { border: 0; background: none; padding: 6px 4px; font-size: .88rem; color: inherit; opacity: .8;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--dock-line, rgba(120,140,200,.4)); }
+@media (hover: hover) and (pointer: fine) {
+  .ebd-x:hover, .ebd-amts button:not([aria-pressed="true"]):hover { background: var(--dock-line, rgba(120,140,200,.2)); }
+  .ebd-copy:hover { transform: scale(1.04); }
+  .ebd-later button:hover { opacity: 1; }
+}
+
+/* the games' end-of-round line: quiet text in the game's own colours, a small heart link */
+.ebd-line { margin: .7rem auto 0 !important; text-align: center; font: 400 .9rem/1.4 "Fredoka", ui-rounded, system-ui, sans-serif; color: var(--ink, #26385c); opacity: .85; }
+.ebd-line button { display: inline-flex; align-items: center; gap: .3em; margin: 0; padding: 2px 4px; border: 0; background: none; cursor: pointer;
+  font: 600 .9rem/1.4 "Fredoka", ui-rounded, system-ui, sans-serif; color: inherit; text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--underline, #e0558a); -webkit-appearance: none; appearance: none; }
+.ebd-line button svg { width: 14px; height: 14px; color: var(--underline, #e0558a); }
+.ebd-line button:focus-visible { outline: 2px solid var(--underline, #e0558a); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { .ebd, .ebd-card { animation: none; } }
+</style>
+<script>
+/* donate.js — PIX donations (2026-11-25, the user's plan). The same script runs in the menu (appended to its scripts
+   by build.py) and in every game (in the injected foot). Look: donate.css. Codes and QR drawings: pix.json, made into
+   PIX below by build.py (qr.py draws each QR from its code).
+   - Every finished round in any game counts (eb-rounds): a game's end window opening (#endmodal.show, 18 games) or a
+     new "next round" button appearing (#pagain: Stressed Syllables, Silent Letters, Idioms' practice; #spagain: Core
+     Vocabulary's speed round). The same end window shown twice (Core Vocabulary reopens it) counts once.
+   - From the 5th round, a quiet line "Enjoying English Bubbles? ♥ Support it" under the round's buttons, then every
+     4th round (every 15th once the student has copied a code).
+   - The menu asks once (a pop-up) when the student comes back after the 5th round; "Not now" asks again 20 rounds
+     later, three times at most; "Don't show this again" or copying a code ends the pop-ups. The footer's
+     "♥ Support" link stays from the 5th round on.
+   State: eb-don = {next: round of the next pop-up, asks, off, gave, line: round of the next line}. Nothing leaves
+   the device; a fixed PIX code can't tell whether anyone paid, so the app only says thank you. */
+(function () {
+  "use strict";
+  var PIX = {"receiver":"Mauricio Wolney","codes":[{"label":"R$ 5","code":"00020101021126950014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf390233doacao de 5 reais English bubbles52040000530398654045.005802BR5917MAURICIO B WOLNEY6008SALVADOR62070503***63040A6D","n":49,"qr":"M4 4h7v1h-7zM13 4h3v1h-3zM17 4h3v1h-3zM21 4h1v1h-1zM25 4h1v1h-1zM29 4h1v1h-1zM31 4h1v1h-1zM34 4h2v1h-2zM37 4h1v1h-1zM40 4h2v1h-2zM44 4h1v1h-1zM46 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM14 5h4v1h-4zM19 5h1v1h-1zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM28 5h1v1h-1zM31 5h1v1h-1zM33 5h1v1h-1zM35 5h1v1h-1zM38 5h1v1h-1zM40 5h1v1h-1zM42 5h3v1h-3zM46 5h1v1h-1zM52 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM14 6h1v1h-1zM18 6h2v1h-2zM27 6h1v1h-1zM29 6h4v1h-4zM34 6h5v1h-5zM43 6h2v1h-2zM46 6h1v1h-1zM48 6h3v1h-3zM52 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h4v1h-4zM20 7h1v1h-1zM22 7h2v1h-2zM25 7h2v1h-2zM28 7h2v1h-2zM31 7h1v1h-1zM33 7h1v1h-1zM39 7h3v1h-3zM43 7h1v1h-1zM46 7h1v1h-1zM48 7h3v1h-3zM52 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM16 8h4v1h-4zM21 8h1v1h-1zM23 8h1v1h-1zM25 8h6v1h-6zM32 8h1v1h-1zM34 8h1v1h-1zM40 8h2v1h-2zM46 8h1v1h-1zM48 8h3v1h-3zM52 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h1v1h-1zM15 9h3v1h-3zM19 9h2v1h-2zM22 9h5v1h-5zM30 9h2v1h-2zM33 9h1v1h-1zM38 9h1v1h-1zM40 9h3v1h-3zM46 9h1v1h-1zM52 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h1v1h-1zM44 10h1v1h-1zM46 10h7v1h-7zM16 11h2v1h-2zM19 11h3v1h-3zM23 11h2v1h-2zM26 11h1v1h-1zM30 11h3v1h-3zM35 11h2v1h-2zM39 11h1v1h-1zM43 11h1v1h-1zM4 12h5v1h-5zM10 12h3v1h-3zM19 12h2v1h-2zM22 12h3v1h-3zM26 12h6v1h-6zM33 12h2v1h-2zM37 12h1v1h-1zM40 12h1v1h-1zM44 12h2v1h-2zM47 12h1v1h-1zM49 12h1v1h-1zM51 12h1v1h-1zM6 13h1v1h-1zM11 13h1v1h-1zM15 13h1v1h-1zM18 13h2v1h-2zM21 13h1v1h-1zM25 13h1v1h-1zM27 13h2v1h-2zM32 13h1v1h-1zM34 13h1v1h-1zM36 13h2v1h-2zM40 13h1v1h-1zM43 13h1v1h-1zM45 13h2v1h-2zM49 13h1v1h-1zM4 14h1v1h-1zM8 14h1v1h-1zM10 14h5v1h-5zM16 14h1v1h-1zM21 14h2v1h-2zM25 14h1v1h-1zM29 14h2v1h-2zM32 14h2v1h-2zM38 14h6v1h-6zM47 14h6v1h-6zM4 15h1v1h-1zM6 15h1v1h-1zM8 15h1v1h-1zM12 15h1v1h-1zM17 15h2v1h-2zM25 15h1v1h-1zM27 15h1v1h-1zM32 15h8v1h-8zM43 15h1v1h-1zM46 15h4v1h-4zM52 15h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM8 16h1v1h-1zM10 16h1v1h-1zM12 16h2v1h-2zM15 16h2v1h-2zM19 16h2v1h-2zM22 16h1v1h-1zM26 16h1v1h-1zM28 16h1v1h-1zM30 16h2v1h-2zM37 16h1v1h-1zM39 16h2v1h-2zM42 16h3v1h-3zM50 16h2v1h-2zM6 17h1v1h-1zM8 17h1v1h-1zM13 17h3v1h-3zM17 17h3v1h-3zM21 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM28 17h1v1h-1zM34 17h2v1h-2zM37 17h1v1h-1zM46 17h2v1h-2zM49 17h3v1h-3zM4 18h1v1h-1zM7 18h7v1h-7zM15 18h1v1h-1zM19 18h2v1h-2zM22 18h1v1h-1zM25 18h1v1h-1zM30 18h2v1h-2zM36 18h1v1h-1zM38 18h2v1h-2zM42 18h2v1h-2zM45 18h1v1h-1zM52 18h1v1h-1zM5 19h2v1h-2zM9 19h1v1h-1zM14 19h1v1h-1zM19 19h3v1h-3zM23 19h1v1h-1zM25 19h1v1h-1zM27 19h2v1h-2zM30 19h2v1h-2zM34 19h2v1h-2zM39 19h1v1h-1zM45 19h2v1h-2zM48 19h1v1h-1zM52 19h1v1h-1zM7 20h4v1h-4zM13 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM19 20h6v1h-6zM26 20h4v1h-4zM33 20h3v1h-3zM40 20h1v1h-1zM44 20h4v1h-4zM50 20h1v1h-1zM52 20h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM9 21h1v1h-1zM11 21h1v1h-1zM13 21h2v1h-2zM16 21h3v1h-3zM25 21h5v1h-5zM34 21h1v1h-1zM36 21h2v1h-2zM39 21h2v1h-2zM43 21h1v1h-1zM45 21h2v1h-2zM48 21h2v1h-2zM6 22h1v1h-1zM10 22h1v1h-1zM12 22h2v1h-2zM15 22h1v1h-1zM19 22h1v1h-1zM22 22h2v1h-2zM25 22h1v1h-1zM27 22h2v1h-2zM30 22h4v1h-4zM37 22h7v1h-7zM45 22h1v1h-1zM49 22h1v1h-1zM51 22h2v1h-2zM6 23h1v1h-1zM11 23h2v1h-2zM15 23h2v1h-2zM24 23h1v1h-1zM27 23h1v1h-1zM31 23h3v1h-3zM35 23h3v1h-3zM41 23h3v1h-3zM45 23h5v1h-5zM51 23h1v1h-1zM4 24h3v1h-3zM9 24h2v1h-2zM12 24h5v1h-5zM19 24h2v1h-2zM22 24h1v1h-1zM25 24h2v1h-2zM28 24h1v1h-1zM33 24h2v1h-2zM37 24h1v1h-1zM40 24h1v1h-1zM42 24h1v1h-1zM44 24h1v1h-1zM50 24h3v1h-3zM4 25h1v1h-1zM6 25h3v1h-3zM11 25h1v1h-1zM14 25h6v1h-6zM21 25h1v1h-1zM23 25h1v1h-1zM25 25h1v1h-1zM28 25h2v1h-2zM31 25h5v1h-5zM37 25h1v1h-1zM41 25h1v1h-1zM43 25h1v1h-1zM46 25h2v1h-2zM49 25h1v1h-1zM51 25h1v1h-1zM5 26h12v1h-12zM19 26h5v1h-5zM25 26h6v1h-6zM38 26h1v1h-1zM40 26h1v1h-1zM42 26h1v1h-1zM44 26h5v1h-5zM50 26h1v1h-1zM52 26h1v1h-1zM5 27h1v1h-1zM8 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM18 27h3v1h-3zM22 27h1v1h-1zM25 27h2v1h-2zM30 27h2v1h-2zM33 27h2v1h-2zM38 27h2v1h-2zM41 27h1v1h-1zM43 27h2v1h-2zM48 27h1v1h-1zM52 27h1v1h-1zM7 28h2v1h-2zM10 28h1v1h-1zM12 28h1v1h-1zM15 28h3v1h-3zM19 28h8v1h-8zM28 28h1v1h-1zM30 28h1v1h-1zM33 28h1v1h-1zM35 28h1v1h-1zM37 28h2v1h-2zM40 28h2v1h-2zM43 28h2v1h-2zM46 28h1v1h-1zM48 28h3v1h-3zM52 28h1v1h-1zM5 29h2v1h-2zM8 29h1v1h-1zM12 29h1v1h-1zM16 29h1v1h-1zM18 29h1v1h-1zM25 29h2v1h-2zM30 29h1v1h-1zM32 29h3v1h-3zM36 29h2v1h-2zM43 29h2v1h-2zM48 29h2v1h-2zM4 30h1v1h-1zM6 30h1v1h-1zM8 30h5v1h-5zM14 30h1v1h-1zM16 30h2v1h-2zM19 30h1v1h-1zM22 30h3v1h-3zM26 30h6v1h-6zM34 30h1v1h-1zM38 30h5v1h-5zM44 30h5v1h-5zM51 30h2v1h-2zM4 31h2v1h-2zM7 31h1v1h-1zM9 31h1v1h-1zM11 31h2v1h-2zM14 31h3v1h-3zM19 31h1v1h-1zM22 31h1v1h-1zM25 31h2v1h-2zM29 31h1v1h-1zM32 31h1v1h-1zM34 31h1v1h-1zM36 31h2v1h-2zM41 31h1v1h-1zM45 31h1v1h-1zM49 31h1v1h-1zM4 32h3v1h-3zM8 32h6v1h-6zM16 32h1v1h-1zM19 32h2v1h-2zM22 32h1v1h-1zM28 32h2v1h-2zM31 32h1v1h-1zM35 32h1v1h-1zM39 32h5v1h-5zM46 32h1v1h-1zM48 32h1v1h-1zM50 32h2v1h-2zM5 33h2v1h-2zM9 33h1v1h-1zM11 33h1v1h-1zM14 33h6v1h-6zM21 33h1v1h-1zM23 33h1v1h-1zM25 33h1v1h-1zM27 33h3v1h-3zM31 33h1v1h-1zM34 33h2v1h-2zM37 33h1v1h-1zM39 33h1v1h-1zM41 33h1v1h-1zM43 33h3v1h-3zM47 33h1v1h-1zM49 33h3v1h-3zM10 34h4v1h-4zM15 34h1v1h-1zM17 34h1v1h-1zM20 34h2v1h-2zM24 34h1v1h-1zM26 34h1v1h-1zM29 34h1v1h-1zM33 34h1v1h-1zM38 34h1v1h-1zM40 34h1v1h-1zM42 34h3v1h-3zM46 34h1v1h-1zM48 34h2v1h-2zM52 34h1v1h-1zM7 35h1v1h-1zM9 35h1v1h-1zM13 35h2v1h-2zM17 35h1v1h-1zM19 35h1v1h-1zM21 35h1v1h-1zM23 35h1v1h-1zM27 35h1v1h-1zM30 35h2v1h-2zM33 35h1v1h-1zM35 35h3v1h-3zM39 35h1v1h-1zM45 35h1v1h-1zM49 35h1v1h-1zM52 35h1v1h-1zM6 36h1v1h-1zM10 36h3v1h-3zM14 36h2v1h-2zM17 36h1v1h-1zM19 36h7v1h-7zM27 36h1v1h-1zM29 36h1v1h-1zM33 36h2v1h-2zM37 36h1v1h-1zM40 36h4v1h-4zM47 36h4v1h-4zM52 36h1v1h-1zM5 37h2v1h-2zM12 37h5v1h-5zM18 37h2v1h-2zM25 37h1v1h-1zM28 37h3v1h-3zM33 37h2v1h-2zM37 37h1v1h-1zM40 37h1v1h-1zM43 37h1v1h-1zM45 37h2v1h-2zM49 37h1v1h-1zM5 38h4v1h-4zM10 38h4v1h-4zM20 38h3v1h-3zM24 38h6v1h-6zM31 38h2v1h-2zM34 38h1v1h-1zM38 38h1v1h-1zM41 38h4v1h-4zM46 38h1v1h-1zM48 38h2v1h-2zM51 38h2v1h-2zM5 39h2v1h-2zM11 39h1v1h-1zM14 39h3v1h-3zM20 39h2v1h-2zM23 39h1v1h-1zM25 39h3v1h-3zM32 39h3v1h-3zM36 39h2v1h-2zM41 39h2v1h-2zM45 39h1v1h-1zM49 39h1v1h-1zM51 39h2v1h-2zM4 40h3v1h-3zM9 40h2v1h-2zM13 40h1v1h-1zM16 40h2v1h-2zM20 40h1v1h-1zM22 40h2v1h-2zM28 40h2v1h-2zM31 40h1v1h-1zM33 40h3v1h-3zM38 40h6v1h-6zM45 40h2v1h-2zM48 40h1v1h-1zM50 40h3v1h-3zM4 41h1v1h-1zM7 41h2v1h-2zM11 41h1v1h-1zM13 41h1v1h-1zM16 41h1v1h-1zM19 41h1v1h-1zM21 41h1v1h-1zM23 41h1v1h-1zM25 41h5v1h-5zM33 41h2v1h-2zM36 41h2v1h-2zM41 41h1v1h-1zM43 41h1v1h-1zM45 41h3v1h-3zM49 41h1v1h-1zM51 41h1v1h-1zM5 42h1v1h-1zM9 42h3v1h-3zM13 42h1v1h-1zM16 42h1v1h-1zM19 42h1v1h-1zM22 42h1v1h-1zM26 42h1v1h-1zM28 42h1v1h-1zM32 42h1v1h-1zM35 42h1v1h-1zM38 42h1v1h-1zM40 42h5v1h-5zM46 42h2v1h-2zM49 42h1v1h-1zM52 42h1v1h-1zM5 43h3v1h-3zM13 43h1v1h-1zM15 43h3v1h-3zM19 43h1v1h-1zM21 43h5v1h-5zM27 43h1v1h-1zM29 43h3v1h-3zM34 43h4v1h-4zM39 43h1v1h-1zM45 43h1v1h-1zM47 43h1v1h-1zM52 43h1v1h-1zM4 44h3v1h-3zM10 44h4v1h-4zM17 44h1v1h-1zM19 44h4v1h-4zM24 44h7v1h-7zM33 44h2v1h-2zM37 44h1v1h-1zM40 44h1v1h-1zM43 44h8v1h-8zM52 44h1v1h-1zM12 45h1v1h-1zM14 45h1v1h-1zM16 45h1v1h-1zM18 45h1v1h-1zM23 45h1v1h-1zM26 45h1v1h-1zM30 45h5v1h-5zM37 45h1v1h-1zM39 45h2v1h-2zM43 45h2v1h-2zM48 45h2v1h-2zM52 45h1v1h-1zM4 46h7v1h-7zM12 46h1v1h-1zM15 46h1v1h-1zM22 46h1v1h-1zM26 46h1v1h-1zM28 46h1v1h-1zM30 46h2v1h-2zM33 46h2v1h-2zM36 46h1v1h-1zM38 46h1v1h-1zM41 46h4v1h-4zM46 46h1v1h-1zM48 46h1v1h-1zM51 46h2v1h-2zM4 47h1v1h-1zM10 47h1v1h-1zM14 47h1v1h-1zM16 47h2v1h-2zM19 47h1v1h-1zM22 47h2v1h-2zM25 47h2v1h-2zM30 47h3v1h-3zM34 47h3v1h-3zM41 47h1v1h-1zM43 47h2v1h-2zM48 47h2v1h-2zM52 47h1v1h-1zM4 48h1v1h-1zM6 48h3v1h-3zM10 48h1v1h-1zM12 48h1v1h-1zM14 48h1v1h-1zM16 48h1v1h-1zM20 48h1v1h-1zM22 48h1v1h-1zM26 48h6v1h-6zM33 48h1v1h-1zM37 48h4v1h-4zM42 48h7v1h-7zM50 48h1v1h-1zM52 48h1v1h-1zM4 49h1v1h-1zM6 49h3v1h-3zM10 49h1v1h-1zM12 49h1v1h-1zM15 49h5v1h-5zM21 49h1v1h-1zM23 49h1v1h-1zM25 49h1v1h-1zM29 49h2v1h-2zM32 49h6v1h-6zM44 49h6v1h-6zM52 49h1v1h-1zM4 50h1v1h-1zM6 50h3v1h-3zM10 50h1v1h-1zM12 50h1v1h-1zM14 50h1v1h-1zM18 50h1v1h-1zM22 50h2v1h-2zM25 50h1v1h-1zM28 50h4v1h-4zM38 50h2v1h-2zM42 50h2v1h-2zM45 50h2v1h-2zM49 50h3v1h-3zM4 51h1v1h-1zM10 51h1v1h-1zM12 51h1v1h-1zM15 51h3v1h-3zM21 51h1v1h-1zM26 51h1v1h-1zM28 51h2v1h-2zM33 51h4v1h-4zM39 51h1v1h-1zM43 51h2v1h-2zM46 51h1v1h-1zM52 51h1v1h-1zM4 52h7v1h-7zM12 52h1v1h-1zM15 52h1v1h-1zM17 52h1v1h-1zM19 52h4v1h-4zM24 52h1v1h-1zM27 52h2v1h-2zM33 52h2v1h-2zM40 52h4v1h-4zM45 52h1v1h-1zM50 52h3v1h-3z"},{"label":"R$ 10","code":"00020101021126930014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf390231doacao 10 reais English Bubbles520400005303986540510.005802BR5917MAURICIO B WOLNEY6008SALVADOR62070503***6304FA56","n":49,"qr":"M4 4h7v1h-7zM13 4h3v1h-3zM17 4h2v1h-2zM21 4h1v1h-1zM25 4h1v1h-1zM31 4h2v1h-2zM34 4h2v1h-2zM37 4h1v1h-1zM39 4h3v1h-3zM44 4h1v1h-1zM46 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM14 5h1v1h-1zM16 5h1v1h-1zM19 5h1v1h-1zM21 5h2v1h-2zM24 5h1v1h-1zM26 5h1v1h-1zM28 5h1v1h-1zM30 5h2v1h-2zM33 5h1v1h-1zM36 5h1v1h-1zM38 5h1v1h-1zM40 5h1v1h-1zM42 5h3v1h-3zM46 5h1v1h-1zM52 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM17 6h3v1h-3zM25 6h1v1h-1zM27 6h1v1h-1zM29 6h4v1h-4zM34 6h5v1h-5zM43 6h2v1h-2zM46 6h1v1h-1zM48 6h3v1h-3zM52 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h4v1h-4zM20 7h1v1h-1zM22 7h4v1h-4zM28 7h2v1h-2zM31 7h1v1h-1zM33 7h1v1h-1zM39 7h3v1h-3zM43 7h1v1h-1zM46 7h1v1h-1zM48 7h3v1h-3zM52 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM13 8h1v1h-1zM15 8h1v1h-1zM17 8h3v1h-3zM21 8h1v1h-1zM25 8h6v1h-6zM32 8h1v1h-1zM34 8h1v1h-1zM40 8h2v1h-2zM46 8h1v1h-1zM48 8h3v1h-3zM52 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h5v1h-5zM19 9h2v1h-2zM22 9h1v1h-1zM24 9h3v1h-3zM30 9h2v1h-2zM33 9h1v1h-1zM38 9h1v1h-1zM40 9h3v1h-3zM46 9h1v1h-1zM52 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h1v1h-1zM44 10h1v1h-1zM46 10h7v1h-7zM14 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM21 11h1v1h-1zM26 11h1v1h-1zM30 11h2v1h-2zM34 11h4v1h-4zM39 11h1v1h-1zM41 11h1v1h-1zM43 11h1v1h-1zM4 12h5v1h-5zM10 12h4v1h-4zM17 12h1v1h-1zM19 12h2v1h-2zM22 12h3v1h-3zM26 12h5v1h-5zM33 12h2v1h-2zM37 12h1v1h-1zM40 12h2v1h-2zM44 12h2v1h-2zM47 12h1v1h-1zM49 12h1v1h-1zM51 12h1v1h-1zM4 13h3v1h-3zM9 13h1v1h-1zM11 13h1v1h-1zM14 13h2v1h-2zM18 13h2v1h-2zM21 13h1v1h-1zM25 13h1v1h-1zM31 13h1v1h-1zM34 13h2v1h-2zM37 13h1v1h-1zM39 13h2v1h-2zM43 13h1v1h-1zM46 13h4v1h-4zM4 14h4v1h-4zM10 14h6v1h-6zM19 14h1v1h-1zM22 14h1v1h-1zM25 14h1v1h-1zM27 14h5v1h-5zM33 14h1v1h-1zM35 14h1v1h-1zM37 14h7v1h-7zM45 14h1v1h-1zM49 14h4v1h-4zM4 15h1v1h-1zM7 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM15 15h1v1h-1zM19 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM32 15h8v1h-8zM43 15h1v1h-1zM46 15h4v1h-4zM51 15h1v1h-1zM6 16h2v1h-2zM9 16h2v1h-2zM15 16h1v1h-1zM20 16h1v1h-1zM22 16h2v1h-2zM26 16h1v1h-1zM28 16h1v1h-1zM31 16h1v1h-1zM37 16h1v1h-1zM39 16h2v1h-2zM42 16h3v1h-3zM50 16h1v1h-1zM52 16h1v1h-1zM4 17h4v1h-4zM11 17h3v1h-3zM17 17h3v1h-3zM21 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM28 17h2v1h-2zM34 17h2v1h-2zM37 17h1v1h-1zM46 17h2v1h-2zM49 17h3v1h-3zM4 18h1v1h-1zM6 18h7v1h-7zM14 18h2v1h-2zM17 18h1v1h-1zM19 18h2v1h-2zM22 18h4v1h-4zM29 18h1v1h-1zM31 18h1v1h-1zM36 18h1v1h-1zM38 18h2v1h-2zM42 18h2v1h-2zM45 18h1v1h-1zM49 18h1v1h-1zM52 18h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM12 19h1v1h-1zM14 19h2v1h-2zM17 19h1v1h-1zM19 19h7v1h-7zM27 19h1v1h-1zM30 19h7v1h-7zM38 19h2v1h-2zM45 19h5v1h-5zM52 19h1v1h-1zM6 20h1v1h-1zM8 20h7v1h-7zM17 20h1v1h-1zM20 20h5v1h-5zM26 20h1v1h-1zM28 20h2v1h-2zM31 20h1v1h-1zM33 20h1v1h-1zM37 20h2v1h-2zM40 20h3v1h-3zM44 20h4v1h-4zM49 20h2v1h-2zM52 20h1v1h-1zM4 21h3v1h-3zM8 21h2v1h-2zM11 21h3v1h-3zM15 21h2v1h-2zM18 21h2v1h-2zM25 21h5v1h-5zM32 21h3v1h-3zM36 21h2v1h-2zM40 21h1v1h-1zM43 21h1v1h-1zM46 21h2v1h-2zM49 21h1v1h-1zM51 21h1v1h-1zM5 22h4v1h-4zM10 22h2v1h-2zM13 22h1v1h-1zM17 22h1v1h-1zM22 22h2v1h-2zM25 22h1v1h-1zM30 22h1v1h-1zM32 22h1v1h-1zM34 22h1v1h-1zM38 22h1v1h-1zM40 22h4v1h-4zM45 22h1v1h-1zM47 22h1v1h-1zM49 22h1v1h-1zM51 22h2v1h-2zM5 23h2v1h-2zM9 23h1v1h-1zM12 23h2v1h-2zM15 23h1v1h-1zM19 23h1v1h-1zM22 23h1v1h-1zM24 23h1v1h-1zM27 23h1v1h-1zM29 23h1v1h-1zM31 23h3v1h-3zM35 23h3v1h-3zM41 23h3v1h-3zM45 23h5v1h-5zM51 23h2v1h-2zM5 24h1v1h-1zM9 24h2v1h-2zM15 24h1v1h-1zM17 24h1v1h-1zM19 24h2v1h-2zM22 24h1v1h-1zM25 24h2v1h-2zM28 24h3v1h-3zM33 24h2v1h-2zM37 24h1v1h-1zM40 24h1v1h-1zM42 24h1v1h-1zM44 24h1v1h-1zM50 24h1v1h-1zM4 25h1v1h-1zM7 25h1v1h-1zM9 25h1v1h-1zM13 25h1v1h-1zM19 25h1v1h-1zM21 25h1v1h-1zM23 25h1v1h-1zM25 25h2v1h-2zM28 25h2v1h-2zM31 25h5v1h-5zM37 25h1v1h-1zM41 25h1v1h-1zM43 25h1v1h-1zM46 25h2v1h-2zM49 25h1v1h-1zM51 25h1v1h-1zM4 26h1v1h-1zM6 26h7v1h-7zM14 26h1v1h-1zM16 26h1v1h-1zM19 26h4v1h-4zM25 26h6v1h-6zM38 26h1v1h-1zM40 26h1v1h-1zM42 26h1v1h-1zM44 26h6v1h-6zM52 26h1v1h-1zM4 27h2v1h-2zM8 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM16 27h2v1h-2zM19 27h2v1h-2zM22 27h2v1h-2zM25 27h2v1h-2zM30 27h2v1h-2zM33 27h1v1h-1zM35 27h1v1h-1zM37 27h1v1h-1zM39 27h1v1h-1zM43 27h2v1h-2zM48 27h1v1h-1zM52 27h1v1h-1zM7 28h2v1h-2zM10 28h1v1h-1zM12 28h1v1h-1zM16 28h2v1h-2zM20 28h7v1h-7zM28 28h1v1h-1zM30 28h1v1h-1zM33 28h3v1h-3zM37 28h1v1h-1zM40 28h1v1h-1zM43 28h2v1h-2zM46 28h1v1h-1zM48 28h2v1h-2zM52 28h1v1h-1zM4 29h2v1h-2zM8 29h1v1h-1zM12 29h4v1h-4zM18 29h2v1h-2zM26 29h1v1h-1zM30 29h1v1h-1zM33 29h2v1h-2zM36 29h2v1h-2zM40 29h1v1h-1zM43 29h2v1h-2zM48 29h2v1h-2zM8 30h10v1h-10zM19 30h1v1h-1zM21 30h12v1h-12zM34 30h1v1h-1zM38 30h5v1h-5zM44 30h5v1h-5zM51 30h2v1h-2zM5 31h1v1h-1zM9 31h1v1h-1zM11 31h3v1h-3zM18 31h2v1h-2zM21 31h1v1h-1zM25 31h2v1h-2zM32 31h1v1h-1zM34 31h1v1h-1zM36 31h2v1h-2zM41 31h1v1h-1zM45 31h1v1h-1zM49 31h1v1h-1zM52 31h1v1h-1zM7 32h1v1h-1zM10 32h1v1h-1zM14 32h1v1h-1zM16 32h2v1h-2zM19 32h2v1h-2zM22 32h1v1h-1zM27 32h3v1h-3zM31 32h1v1h-1zM35 32h1v1h-1zM39 32h5v1h-5zM46 32h1v1h-1zM48 32h1v1h-1zM50 32h2v1h-2zM4 33h1v1h-1zM6 33h1v1h-1zM11 33h1v1h-1zM16 33h1v1h-1zM19 33h1v1h-1zM21 33h1v1h-1zM23 33h1v1h-1zM25 33h1v1h-1zM27 33h3v1h-3zM31 33h1v1h-1zM34 33h2v1h-2zM37 33h1v1h-1zM39 33h1v1h-1zM41 33h1v1h-1zM43 33h1v1h-1zM47 33h1v1h-1zM49 33h1v1h-1zM51 33h1v1h-1zM9 34h2v1h-2zM16 34h1v1h-1zM18 34h4v1h-4zM23 34h1v1h-1zM26 34h4v1h-4zM33 34h1v1h-1zM38 34h1v1h-1zM40 34h1v1h-1zM42 34h3v1h-3zM46 34h1v1h-1zM49 34h2v1h-2zM52 34h1v1h-1zM5 35h1v1h-1zM9 35h1v1h-1zM12 35h1v1h-1zM16 35h2v1h-2zM19 35h3v1h-3zM25 35h1v1h-1zM27 35h2v1h-2zM30 35h2v1h-2zM34 35h1v1h-1zM37 35h1v1h-1zM39 35h1v1h-1zM45 35h1v1h-1zM47 35h2v1h-2zM52 35h1v1h-1zM4 36h1v1h-1zM6 36h5v1h-5zM17 36h1v1h-1zM19 36h6v1h-6zM27 36h1v1h-1zM29 36h2v1h-2zM33 36h3v1h-3zM37 36h1v1h-1zM40 36h4v1h-4zM47 36h2v1h-2zM50 36h1v1h-1zM52 36h1v1h-1zM4 37h1v1h-1zM8 37h1v1h-1zM11 37h3v1h-3zM17 37h3v1h-3zM25 37h2v1h-2zM28 37h3v1h-3zM32 37h3v1h-3zM36 37h2v1h-2zM39 37h2v1h-2zM43 37h1v1h-1zM45 37h2v1h-2zM49 37h1v1h-1zM6 38h1v1h-1zM8 38h1v1h-1zM10 38h1v1h-1zM12 38h1v1h-1zM16 38h1v1h-1zM20 38h1v1h-1zM22 38h1v1h-1zM24 38h6v1h-6zM31 38h1v1h-1zM33 38h2v1h-2zM38 38h7v1h-7zM46 38h1v1h-1zM48 38h2v1h-2zM51 38h2v1h-2zM5 39h3v1h-3zM12 39h1v1h-1zM14 39h4v1h-4zM20 39h1v1h-1zM22 39h2v1h-2zM25 39h1v1h-1zM27 39h1v1h-1zM32 39h3v1h-3zM36 39h2v1h-2zM41 39h2v1h-2zM45 39h1v1h-1zM49 39h1v1h-1zM51 39h1v1h-1zM10 40h1v1h-1zM14 40h1v1h-1zM16 40h1v1h-1zM19 40h2v1h-2zM22 40h1v1h-1zM28 40h2v1h-2zM31 40h1v1h-1zM33 40h3v1h-3zM38 40h6v1h-6zM46 40h1v1h-1zM48 40h1v1h-1zM50 40h3v1h-3zM9 41h1v1h-1zM11 41h5v1h-5zM17 41h3v1h-3zM21 41h1v1h-1zM23 41h1v1h-1zM25 41h5v1h-5zM33 41h2v1h-2zM36 41h2v1h-2zM41 41h1v1h-1zM43 41h1v1h-1zM46 41h2v1h-2zM51 41h1v1h-1zM5 42h1v1h-1zM9 42h2v1h-2zM20 42h1v1h-1zM22 42h1v1h-1zM24 42h1v1h-1zM26 42h1v1h-1zM32 42h1v1h-1zM35 42h1v1h-1zM38 42h1v1h-1zM40 42h5v1h-5zM46 42h1v1h-1zM48 42h1v1h-1zM52 42h1v1h-1zM5 43h3v1h-3zM11 43h5v1h-5zM17 43h3v1h-3zM21 43h3v1h-3zM25 43h1v1h-1zM27 43h1v1h-1zM29 43h3v1h-3zM33 43h4v1h-4zM39 43h1v1h-1zM42 43h1v1h-1zM45 43h1v1h-1zM51 43h1v1h-1zM4 44h3v1h-3zM10 44h2v1h-2zM14 44h1v1h-1zM19 44h4v1h-4zM24 44h7v1h-7zM33 44h2v1h-2zM40 44h2v1h-2zM43 44h9v1h-9zM12 45h5v1h-5zM18 45h1v1h-1zM23 45h1v1h-1zM25 45h2v1h-2zM30 45h1v1h-1zM33 45h2v1h-2zM37 45h1v1h-1zM43 45h2v1h-2zM48 45h2v1h-2zM4 46h7v1h-7zM12 46h6v1h-6zM21 46h2v1h-2zM26 46h1v1h-1zM28 46h1v1h-1zM30 46h5v1h-5zM38 46h7v1h-7zM46 46h1v1h-1zM48 46h1v1h-1zM51 46h2v1h-2zM4 47h1v1h-1zM10 47h1v1h-1zM14 47h4v1h-4zM19 47h1v1h-1zM21 47h3v1h-3zM25 47h2v1h-2zM30 47h3v1h-3zM34 47h3v1h-3zM41 47h1v1h-1zM43 47h2v1h-2zM48 47h2v1h-2zM4 48h1v1h-1zM6 48h3v1h-3zM10 48h1v1h-1zM12 48h1v1h-1zM14 48h1v1h-1zM16 48h1v1h-1zM20 48h1v1h-1zM22 48h2v1h-2zM26 48h6v1h-6zM33 48h1v1h-1zM37 48h4v1h-4zM42 48h7v1h-7zM50 48h2v1h-2zM4 49h1v1h-1zM6 49h3v1h-3zM10 49h1v1h-1zM12 49h1v1h-1zM16 49h4v1h-4zM21 49h1v1h-1zM23 49h1v1h-1zM25 49h1v1h-1zM29 49h2v1h-2zM32 49h6v1h-6zM44 49h1v1h-1zM46 49h4v1h-4zM51 49h1v1h-1zM4 50h1v1h-1zM6 50h3v1h-3zM10 50h1v1h-1zM12 50h3v1h-3zM19 50h1v1h-1zM22 50h1v1h-1zM25 50h1v1h-1zM28 50h1v1h-1zM31 50h1v1h-1zM38 50h2v1h-2zM42 50h2v1h-2zM45 50h1v1h-1zM49 50h2v1h-2zM4 51h1v1h-1zM10 51h1v1h-1zM12 51h1v1h-1zM14 51h3v1h-3zM19 51h1v1h-1zM21 51h1v1h-1zM23 51h2v1h-2zM26 51h1v1h-1zM28 51h2v1h-2zM31 51h1v1h-1zM34 51h6v1h-6zM42 51h2v1h-2zM46 51h1v1h-1zM52 51h1v1h-1zM4 52h7v1h-7zM12 52h3v1h-3zM16 52h2v1h-2zM19 52h4v1h-4zM24 52h1v1h-1zM27 52h2v1h-2zM37 52h1v1h-1zM40 52h1v1h-1zM45 52h1v1h-1zM49 52h4v1h-4z"},{"label":"any","code":"00020101021126580014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf395204000053039865802BR5922MAURICIO BARROS WOLNEY6008SALVADOR62070503***6304440D","n":45,"qr":"M4 4h7v1h-7zM13 4h2v1h-2zM17 4h3v1h-3zM21 4h1v1h-1zM25 4h1v1h-1zM29 4h1v1h-1zM31 4h7v1h-7zM40 4h1v1h-1zM42 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h2v1h-2zM15 5h1v1h-1zM20 5h1v1h-1zM24 5h1v1h-1zM27 5h2v1h-2zM30 5h1v1h-1zM39 5h1v1h-1zM42 5h1v1h-1zM48 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM13 6h1v1h-1zM16 6h4v1h-4zM21 6h2v1h-2zM27 6h5v1h-5zM33 6h1v1h-1zM37 6h1v1h-1zM39 6h1v1h-1zM42 6h1v1h-1zM44 6h3v1h-3zM48 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h1v1h-1zM14 7h4v1h-4zM19 7h7v1h-7zM27 7h2v1h-2zM33 7h1v1h-1zM35 7h1v1h-1zM37 7h1v1h-1zM39 7h2v1h-2zM42 7h1v1h-1zM44 7h3v1h-3zM48 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM18 8h1v1h-1zM24 8h6v1h-6zM32 8h1v1h-1zM34 8h2v1h-2zM38 8h3v1h-3zM42 8h1v1h-1zM44 8h3v1h-3zM48 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h2v1h-2zM16 9h1v1h-1zM19 9h2v1h-2zM22 9h1v1h-1zM24 9h1v1h-1zM28 9h1v1h-1zM32 9h1v1h-1zM36 9h1v1h-1zM42 9h1v1h-1zM48 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h7v1h-7zM13 11h1v1h-1zM16 11h1v1h-1zM19 11h1v1h-1zM22 11h3v1h-3zM28 11h1v1h-1zM32 11h1v1h-1zM34 11h1v1h-1zM36 11h2v1h-2zM39 11h2v1h-2zM4 12h5v1h-5zM10 12h5v1h-5zM16 12h1v1h-1zM20 12h1v1h-1zM22 12h1v1h-1zM24 12h6v1h-6zM31 12h1v1h-1zM35 12h1v1h-1zM39 12h1v1h-1zM41 12h1v1h-1zM43 12h1v1h-1zM45 12h1v1h-1zM47 12h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM11 13h9v1h-9zM21 13h1v1h-1zM23 13h3v1h-3zM28 13h2v1h-2zM32 13h1v1h-1zM34 13h1v1h-1zM36 13h2v1h-2zM40 13h1v1h-1zM46 13h3v1h-3zM4 14h1v1h-1zM7 14h6v1h-6zM15 14h2v1h-2zM19 14h6v1h-6zM26 14h3v1h-3zM30 14h2v1h-2zM38 14h1v1h-1zM40 14h4v1h-4zM46 14h1v1h-1zM4 15h4v1h-4zM12 15h7v1h-7zM21 15h2v1h-2zM27 15h1v1h-1zM29 15h3v1h-3zM34 15h1v1h-1zM37 15h2v1h-2zM40 15h2v1h-2zM44 15h1v1h-1zM46 15h1v1h-1zM4 16h1v1h-1zM7 16h1v1h-1zM9 16h3v1h-3zM16 16h2v1h-2zM19 16h4v1h-4zM24 16h3v1h-3zM28 16h1v1h-1zM30 16h1v1h-1zM34 16h2v1h-2zM39 16h1v1h-1zM42 16h2v1h-2zM45 16h1v1h-1zM4 17h3v1h-3zM8 17h2v1h-2zM11 17h1v1h-1zM14 17h3v1h-3zM18 17h1v1h-1zM23 17h1v1h-1zM26 17h2v1h-2zM29 17h1v1h-1zM32 17h6v1h-6zM40 17h1v1h-1zM43 17h1v1h-1zM46 17h3v1h-3zM4 18h1v1h-1zM7 18h1v1h-1zM9 18h2v1h-2zM16 18h2v1h-2zM19 18h1v1h-1zM21 18h2v1h-2zM24 18h2v1h-2zM28 18h1v1h-1zM34 18h1v1h-1zM38 18h1v1h-1zM41 18h4v1h-4zM4 19h1v1h-1zM6 19h3v1h-3zM12 19h1v1h-1zM16 19h1v1h-1zM19 19h3v1h-3zM32 19h2v1h-2zM36 19h1v1h-1zM40 19h1v1h-1zM44 19h1v1h-1zM46 19h1v1h-1zM4 20h1v1h-1zM6 20h2v1h-2zM9 20h3v1h-3zM14 20h1v1h-1zM16 20h1v1h-1zM20 20h1v1h-1zM22 20h3v1h-3zM28 20h2v1h-2zM31 20h1v1h-1zM35 20h1v1h-1zM37 20h1v1h-1zM39 20h1v1h-1zM41 20h1v1h-1zM43 20h1v1h-1zM45 20h1v1h-1zM4 21h4v1h-4zM9 21h1v1h-1zM11 21h1v1h-1zM16 21h4v1h-4zM21 21h1v1h-1zM25 21h1v1h-1zM27 21h2v1h-2zM31 21h4v1h-4zM36 21h1v1h-1zM40 21h1v1h-1zM43 21h2v1h-2zM46 21h3v1h-3zM4 22h4v1h-4zM10 22h1v1h-1zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h6v1h-6zM26 22h5v1h-5zM33 22h1v1h-1zM35 22h4v1h-4zM40 22h4v1h-4zM46 22h1v1h-1zM7 23h1v1h-1zM9 23h1v1h-1zM13 23h2v1h-2zM19 23h4v1h-4zM25 23h1v1h-1zM28 23h2v1h-2zM34 23h1v1h-1zM37 23h1v1h-1zM40 23h2v1h-2zM44 23h1v1h-1zM46 23h1v1h-1zM5 24h2v1h-2zM8 24h8v1h-8zM17 24h1v1h-1zM20 24h1v1h-1zM22 24h1v1h-1zM24 24h6v1h-6zM35 24h1v1h-1zM37 24h9v1h-9zM6 25h1v1h-1zM8 25h1v1h-1zM12 25h2v1h-2zM15 25h2v1h-2zM18 25h2v1h-2zM21 25h1v1h-1zM23 25h2v1h-2zM28 25h2v1h-2zM31 25h1v1h-1zM33 25h3v1h-3zM37 25h1v1h-1zM40 25h1v1h-1zM44 25h1v1h-1zM46 25h3v1h-3zM7 26h2v1h-2zM10 26h1v1h-1zM12 26h1v1h-1zM17 26h1v1h-1zM19 26h1v1h-1zM22 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h2v1h-2zM31 26h1v1h-1zM34 26h1v1h-1zM36 26h1v1h-1zM38 26h3v1h-3zM42 26h1v1h-1zM44 26h1v1h-1zM46 26h1v1h-1zM4 27h1v1h-1zM6 27h3v1h-3zM12 27h1v1h-1zM15 27h1v1h-1zM19 27h1v1h-1zM22 27h1v1h-1zM24 27h1v1h-1zM28 27h1v1h-1zM30 27h1v1h-1zM32 27h1v1h-1zM34 27h1v1h-1zM36 27h2v1h-2zM40 27h1v1h-1zM44 27h1v1h-1zM46 27h1v1h-1zM4 28h3v1h-3zM8 28h5v1h-5zM14 28h3v1h-3zM19 28h2v1h-2zM22 28h8v1h-8zM31 28h1v1h-1zM34 28h1v1h-1zM37 28h2v1h-2zM40 28h6v1h-6zM6 29h1v1h-1zM8 29h1v1h-1zM12 29h2v1h-2zM16 29h4v1h-4zM21 29h1v1h-1zM23 29h1v1h-1zM25 29h2v1h-2zM32 29h3v1h-3zM36 29h1v1h-1zM39 29h3v1h-3zM43 29h1v1h-1zM45 29h4v1h-4zM5 30h3v1h-3zM10 30h3v1h-3zM14 30h4v1h-4zM19 30h4v1h-4zM24 30h1v1h-1zM29 30h3v1h-3zM35 30h1v1h-1zM38 30h1v1h-1zM45 30h2v1h-2zM6 31h1v1h-1zM8 31h2v1h-2zM11 31h2v1h-2zM14 31h1v1h-1zM16 31h1v1h-1zM18 31h3v1h-3zM22 31h1v1h-1zM25 31h4v1h-4zM30 31h3v1h-3zM34 31h1v1h-1zM37 31h1v1h-1zM39 31h6v1h-6zM46 31h1v1h-1zM4 32h1v1h-1zM7 32h2v1h-2zM10 32h1v1h-1zM13 32h1v1h-1zM15 32h1v1h-1zM20 32h1v1h-1zM22 32h1v1h-1zM24 32h1v1h-1zM27 32h3v1h-3zM31 32h1v1h-1zM33 32h3v1h-3zM37 32h2v1h-2zM40 32h1v1h-1zM44 32h2v1h-2zM4 33h2v1h-2zM9 33h1v1h-1zM11 33h3v1h-3zM16 33h4v1h-4zM24 33h2v1h-2zM27 33h1v1h-1zM32 33h3v1h-3zM36 33h1v1h-1zM40 33h1v1h-1zM42 33h2v1h-2zM46 33h3v1h-3zM4 34h1v1h-1zM7 34h2v1h-2zM10 34h3v1h-3zM17 34h1v1h-1zM19 34h4v1h-4zM24 34h1v1h-1zM26 34h2v1h-2zM29 34h3v1h-3zM33 34h2v1h-2zM37 34h1v1h-1zM39 34h2v1h-2zM43 34h1v1h-1zM45 34h2v1h-2zM8 35h2v1h-2zM11 35h1v1h-1zM13 35h1v1h-1zM16 35h1v1h-1zM19 35h1v1h-1zM21 35h4v1h-4zM28 35h1v1h-1zM32 35h1v1h-1zM35 35h3v1h-3zM41 35h3v1h-3zM46 35h1v1h-1zM7 36h2v1h-2zM10 36h2v1h-2zM16 36h1v1h-1zM19 36h2v1h-2zM22 36h2v1h-2zM25 36h1v1h-1zM28 36h1v1h-1zM31 36h1v1h-1zM33 36h3v1h-3zM37 36h2v1h-2zM40 36h1v1h-1zM42 36h1v1h-1zM44 36h2v1h-2zM47 36h1v1h-1zM11 37h1v1h-1zM13 37h1v1h-1zM15 37h1v1h-1zM17 37h3v1h-3zM21 37h1v1h-1zM23 37h2v1h-2zM26 37h1v1h-1zM28 37h1v1h-1zM33 37h5v1h-5zM39 37h2v1h-2zM43 37h1v1h-1zM46 37h3v1h-3zM8 38h1v1h-1zM10 38h2v1h-2zM13 38h1v1h-1zM19 38h3v1h-3zM25 38h1v1h-1zM29 38h3v1h-3zM33 38h1v1h-1zM35 38h4v1h-4zM44 38h2v1h-2zM5 39h4v1h-4zM11 39h3v1h-3zM15 39h1v1h-1zM17 39h8v1h-8zM28 39h2v1h-2zM34 39h2v1h-2zM38 39h6v1h-6zM46 39h1v1h-1zM4 40h1v1h-1zM7 40h2v1h-2zM10 40h2v1h-2zM13 40h3v1h-3zM20 40h1v1h-1zM22 40h1v1h-1zM24 40h5v1h-5zM30 40h1v1h-1zM35 40h1v1h-1zM40 40h6v1h-6zM48 40h1v1h-1zM12 41h2v1h-2zM16 41h4v1h-4zM21 41h1v1h-1zM24 41h1v1h-1zM28 41h1v1h-1zM32 41h4v1h-4zM39 41h2v1h-2zM44 41h1v1h-1zM46 41h3v1h-3zM4 42h7v1h-7zM12 42h5v1h-5zM19 42h1v1h-1zM22 42h1v1h-1zM24 42h1v1h-1zM26 42h1v1h-1zM28 42h3v1h-3zM32 42h4v1h-4zM37 42h1v1h-1zM40 42h1v1h-1zM42 42h1v1h-1zM44 42h1v1h-1zM46 42h1v1h-1zM4 43h1v1h-1zM10 43h1v1h-1zM15 43h2v1h-2zM19 43h2v1h-2zM22 43h3v1h-3zM28 43h1v1h-1zM32 43h1v1h-1zM36 43h1v1h-1zM38 43h3v1h-3zM44 43h1v1h-1zM46 43h1v1h-1zM4 44h1v1h-1zM6 44h3v1h-3zM10 44h1v1h-1zM12 44h2v1h-2zM16 44h2v1h-2zM19 44h2v1h-2zM22 44h1v1h-1zM24 44h8v1h-8zM34 44h2v1h-2zM37 44h2v1h-2zM40 44h6v1h-6zM4 45h1v1h-1zM6 45h3v1h-3zM10 45h1v1h-1zM12 45h1v1h-1zM16 45h1v1h-1zM19 45h1v1h-1zM21 45h1v1h-1zM31 45h1v1h-1zM34 45h3v1h-3zM39 45h1v1h-1zM41 45h1v1h-1zM44 45h1v1h-1zM46 45h2v1h-2zM4 46h1v1h-1zM6 46h3v1h-3zM10 46h1v1h-1zM12 46h1v1h-1zM14 46h1v1h-1zM16 46h1v1h-1zM18 46h1v1h-1zM20 46h1v1h-1zM23 46h1v1h-1zM25 46h1v1h-1zM27 46h5v1h-5zM33 46h1v1h-1zM35 46h1v1h-1zM37 46h2v1h-2zM40 46h1v1h-1zM42 46h2v1h-2zM46 46h1v1h-1zM48 46h1v1h-1zM4 47h1v1h-1zM10 47h1v1h-1zM12 47h2v1h-2zM15 47h3v1h-3zM19 47h1v1h-1zM22 47h3v1h-3zM27 47h1v1h-1zM31 47h1v1h-1zM34 47h2v1h-2zM37 47h1v1h-1zM40 47h1v1h-1zM46 47h1v1h-1zM4 48h7v1h-7zM12 48h2v1h-2zM15 48h1v1h-1zM20 48h1v1h-1zM22 48h1v1h-1zM25 48h1v1h-1zM28 48h1v1h-1zM35 48h1v1h-1zM40 48h4v1h-4zM45 48h1v1h-1zM47 48h1v1h-1z"}]};
+  var FIRST = 5, LINE_EVERY = 4, LINE_EVERY_GAVE = 15, ASK_AGAIN = 20, MAX_ASKS = 3;
+  var inMenu = !window.ebApp;
+  // In a game, the injected head (game-head.html) gives the app's own storage (games' keys get a prefix) and language
+  var A = window.ebApp || {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
+  };
+  function rounds() { return parseInt(A.get("eb-rounds"), 10) || 0; }
+  function state() {
+    var s = { next: FIRST, line: FIRST, asks: 0, off: false, gave: false };
+    try { var v = JSON.parse(A.get("eb-don")); if (v) for (var k in v) s[k] = v[k]; } catch (e) {}
+    return s;
+  }
+  function save(s) { A.set("eb-don", JSON.stringify(s)); }
+  function both(en, pt) { return '<span class="ebd-en" lang="en">' + en + '</span><span class="ebd-pt" lang="pt-BR">' + pt + "</span>"; }
+  function ding(f) { try { if (typeof tone === "function") tone(f, 0, .18, .06, 0, true); } catch (e) {} }
+  var HEART = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.6 4.5c2.1 0 3.5 1.2 4.4 2.6.9-1.4 2.3-2.6 4.4-2.6 3.6 0 5.7 3.8 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>';
+
+  // ------------------------------------------------------------ the panel (R$ 5 / R$ 10 / any amount)
+  var el = null, mode = "manual", pick = 0, back = null;
+  function qrSvg(c) {
+    var n = c.n + 8;
+    return '<svg viewBox="0 0 ' + n + " " + n + '" role="img" aria-label="QR code PIX"><rect width="' + n + '" height="' + n + '" rx="3" fill="#fff"/><path fill="#111" d="' + c.qr + '"/></svg>';
+  }
+  function build() {
+    el = document.createElement("div");
+    el.className = "ebd ebd-l";
+    el.hidden = true;
+    el.innerHTML =
+      '<div class="ebd-card" role="dialog" aria-modal="true" aria-labelledby="ebd-t">' +
+      '<button type="button" class="ebd-x" aria-label="Close · Fechar">&times;</button>' +
+      '<h2 class="ebd-t" id="ebd-t"><span class="ebd-hrt">' + HEART + "</span>" + both("Keep English Bubbles free", "Ajude a manter o English Bubbles grátis") + "</h2>" +
+      '<p class="ebd-p">' + both("No ads, no sign-up, free for everyone. If you can, a small PIX helps keep it that way.",
+        "Sem anúncios, sem cadastro, grátis para todos. Se puder, um PIX ajuda a continuar assim.") + "</p>" +
+      '<div class="ebd-amts" role="group" aria-label="Amount · Valor">' + PIX.codes.map(function (c, i) {
+        return '<button type="button" data-i="' + i + '">' + (c.label === "any" ? both("Any amount", "Outro valor") : c.label) + "</button>";
+      }).join("") + "</div>" +
+      '<div class="ebd-qr">' + PIX.codes.map(function (c, i) { return '<div data-i="' + i + '" hidden>' + qrSvg(c) + "</div>"; }).join("") +
+      '<small>' + both("Scan it with your bank app", "Escaneie com o app do seu banco") + "</small></div>" +
+      '<button type="button" class="ebd-show">' + both("Show QR code", "Mostrar QR code") + "</button>" +
+      '<button type="button" class="ebd-copy">' + both("Copy PIX code", "Copiar código PIX") + "</button>" +
+      '<p class="ebd-any" hidden>' + both("You type the amount in your bank app.", "Você digita o valor no app do banco.") + "</p>" +
+      '<p class="ebd-done" role="status" hidden>' + both("Copied! In your bank app: <b>Pix → Pix Copia e Cola</b>, then paste. Thank you! ♥",
+        "Copiado! No app do banco: <b>Pix → Pix Copia e Cola</b> e cole. Obrigado! ♥") + "</p>" +
+      '<textarea class="ebd-code" readonly rows="3" hidden aria-label="PIX"></textarea>' +
+      '<p class="ebd-who">' + both("Receiver: ", "Recebedor: ") + PIX.receiver + "</p>" +
+      '<div class="ebd-later" hidden><button type="button" class="ebd-no">' + both("Not now", "Agora não") + "</button>" +
+      '<button type="button" class="ebd-never">' + both("Don't show this again", "Não mostrar de novo") + "</button></div>" +
+      "</div>";
+    document.body.appendChild(el);
+    el.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var t = e.target;
+      if (t === el) { bounce(); return; }
+      var amt = t.closest(".ebd-amts button");
+      if (amt) { choose(+amt.dataset.i); ding(587.33); return; }
+      if (t.closest(".ebd-x") || t.closest(".ebd-no")) { close(); return; }
+      if (t.closest(".ebd-never")) { var s = state(); s.off = true; save(s); close(true); return; }
+      if (t.closest(".ebd-show")) { el.classList.add("qr-on"); return; }
+      if (t.closest(".ebd-copy")) copy();
+    });
+    // the game behind must not react to taps on the panel
+    ["pointerdown", "pointerup", "mousedown", "touchstart", "touchend"].forEach(function (k) { el.addEventListener(k, function (e) { e.stopPropagation(); }); });
+  }
+  function bounce() {
+    var c = el.querySelector(".ebd-card");
+    if (c.animate && !matchMedia("(prefers-reduced-motion: reduce)").matches)
+      c.animate([{ transform: "scale(1)" }, { transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 260, easing: "ease-out" });
+  }
+  function choose(i) {
+    pick = i;
+    el.querySelectorAll(".ebd-amts button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.dataset.i === i)); });
+    el.querySelectorAll(".ebd-qr > div").forEach(function (d) { d.hidden = +d.dataset.i !== i; });
+    el.querySelector(".ebd-any").hidden = PIX.codes[i].label !== "any";
+    el.querySelector(".ebd-done").hidden = true;
+    el.querySelector(".ebd-code").hidden = true;
+  }
+  function copied() {
+    el.querySelector(".ebd-done").hidden = false;
+    el.querySelector(".ebd-code").hidden = true;
+    var s = state(); s.gave = true; save(s);       // no more pop-ups; the line in the games comes less often
+    ding(659.25); setTimeout(function () { ding(987.77); }, 90);
+  }
+  function copy() {
+    var code = PIX.codes[pick].code, ta = el.querySelector(".ebd-code");
+    function fallback() {
+      ta.value = code; ta.hidden = false; ta.focus(); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      if (ok) { ta.hidden = true; copied(); }       // else the code stays shown, selected, to copy by hand
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(code).then(copied, fallback);
+    else fallback();
+  }
+  function open(how) {
+    if (!el) build();
+    if (!el.hidden) return;
+    mode = how || "manual";
+    back = document.activeElement;
+    el.dataset.lang = A.lang();
+    el.classList.remove("qr-on");
+    el.querySelector(".ebd-later").hidden = mode !== "ask";
+    choose(0);
+    el.hidden = false;
+    document.documentElement.classList.add("ebd-open");
+    try { el.querySelector(".ebd-copy").focus({ preventScroll: true }); } catch (e) {}
+    if (mode !== "ask") ding(659.25);
+  }
+  function close(never) {
+    if (!el || el.hidden) return;
+    if (mode === "ask" && !never) { var s = state(); s.next = rounds() + ASK_AGAIN; save(s); }
+    el.hidden = true;
+    document.documentElement.classList.remove("ebd-open");
+    try { if (back && back.focus) back.focus({ preventScroll: true }); } catch (e) {}
+  }
+  // While the panel is open the keyboard belongs to it (games use Escape, arrows and letters)
+  window.addEventListener("keydown", function (e) {
+    if (!el || el.hidden) return;
+    e.stopImmediatePropagation();
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key === "Tab") {
+      var f = [].filter.call(el.querySelectorAll("button, textarea"), function (b) { return !b.hidden && b.offsetParent !== null; });
+      var at = f.indexOf(document.activeElement);
+      e.preventDefault(); f[(at + (e.shiftKey ? f.length - 1 : 1) + f.length) % f.length].focus();
+    }
+  }, true);
+  window.ebDonate = open;
+
+  // ------------------------------------------------------------ the menu: the pop-up and the footer link
+  if (inMenu) {
+    var link = document.getElementById("donlink");
+    var showLink = function () { if (link) link.hidden = rounds() < FIRST; };
+    if (link) link.addEventListener("click", function () { open("manual"); });
+    var ask = function () {
+      showLink();
+      var s = state(), help = document.getElementById("help");
+      if (s.off || s.gave || s.asks >= MAX_ASKS || rounds() < Math.max(FIRST, s.next)) return;
+      if (help && !help.hidden) return;              // the tour is open
+      s.asks += 1; s.next = rounds() + ASK_AGAIN; save(s);
+      open("ask");
+    };
+    // after the page has arrived (the header's slide, then the page's fade-in), and again when Back restores it
+    var later = function () { var go = function () { setTimeout(ask, 900); }; if (typeof afterSlide === "function") afterSlide(go); else go(); };
+    showLink();
+    later();
+    window.addEventListener("pageshow", function (e) { if (e.persisted) later(); });
+    return;
+  }
+
+  // ------------------------------------------------------------ a game: count rounds, add the line
+  var lastFp = null;
+  function ended(after, fp) {
+    if (!after || fp === lastFp) return;
+    lastFp = fp;
+    var n = rounds() + 1;
+    A.set("eb-rounds", String(n));
+    var old = after.parentNode.querySelector(".ebd-line");
+    if (old) old.remove();
+    var s = state();
+    if (n < FIRST || n < s.line) return;
+    s.line = n + (s.gave ? LINE_EVERY_GAVE : LINE_EVERY); save(s);
+    var p = document.createElement("p");
+    p.className = "ebd-line ebd-l";
+    p.dataset.lang = A.lang();
+    p.innerHTML = both("Enjoying English Bubbles?", "Está gostando do English Bubbles?") +
+      ' <button type="button">' + HEART + both("Support it", "Apoie") + "</button>";
+    p.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); open("manual"); });
+    after.parentNode.insertBefore(p, after.nextSibling);
+  }
+  function text(root, sel) { var x = root && root.querySelector(sel); return x ? x.textContent : ""; }
+  var em = document.getElementById("endmodal"), wasOpen = !!(em && em.classList.contains("show"));
+  if (em) new MutationObserver(function () {
+    var on = em.classList.contains("show");
+    if (on && !wasOpen) ended(em.querySelector(".endbtns") || em.querySelector("#endagain"), "m:" + text(em, "#endscore") + "|" + text(em, "#endlist").slice(0, 400));
+    wasOpen = on;
+  }).observe(em, { attributes: true, attributeFilter: ["class"] });
+  var lastBtn = null;
+  new MutationObserver(function () {
+    var b = document.getElementById("pagain") || document.getElementById("spagain");
+    if (!b || b === lastBtn) return;
+    lastBtn = b;
+    var box = b.closest(".pacts, .endbtns, p") || b;
+    var end = b.closest(".pend") || box.parentNode;
+    // the same round's end drawn again (a language switch) has the same words: not a new round
+    var words = end.querySelectorAll(".w");
+    if (!words.length) words = end.querySelectorAll("li");
+    ended(box, "p:" + [].map.call(words, function (x) { return x.textContent.slice(0, 30); }).join("|").slice(0, 400) + text(end, ".big"));
+  }).observe(document.body, { childList: true, subtree: true });
 })();
 </script>
 
