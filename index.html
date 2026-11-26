@@ -7,6 +7,8 @@
 <meta name="description" content="English practice games for Brazilian learners: grammar, vocabulary and pronunciation, one bubble at a time. Works offline.">
 <meta name="theme-color" content="#e4f3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141964" media="(prefers-color-scheme: dark)">
+<!-- visitor stats (Umami Cloud, no cookies; 2026-11-26, the user): counted only on the real site, not in previews / phone tests -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="daf44de3-d4a0-4383-820b-9763a6abf9b1" data-domains="www.englishbubbles.com.br,englishbubbles.com.br"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -247,7 +249,7 @@ button { cursor: pointer; }
    swatches and the volume pop-up. The element keeps the class "dock": the menu's slide-in waits for it. */
 .dock {
   position: relative; z-index: 20;
-  display: flex; justify-content: center; align-items: center;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
   width: max-content; max-width: calc(100% - 24px);
   margin: calc(env(safe-area-inset-top, 0px) + 22px) auto 0;
 }
@@ -290,6 +292,8 @@ button { cursor: pointer; }
   :root:not([data-theme="light"]) .brand-name { --tb-film: .1; --tb-sheen: .16; --tb-glow: .65; --tb-rim: 1; --tb-hi: .9; --tb-lo: .55; }
 }
 html.tb-on .brand-name i { opacity: 0; }
+/* the subtitle under the name (2026-11-26, the user) */
+.tagline { margin: 2px 0 0; font-size: 1.05rem; font-weight: 500; color: var(--ink-soft); text-align: center; letter-spacing: .01em; }
 .brand:focus-visible { outline: 2px solid var(--underline); outline-offset: 4px; }
 
 .seg { display: inline-flex; align-items: center; gap: 2px; }
@@ -434,12 +438,13 @@ html.frozen .veil { transition: none; }
 .swwrap { padding: 0 1px; }
 @keyframes popin { from { opacity: 0; transform: translateY(-6px) scale(.94); } }
 
-/* Desktops: the name a bit bigger than the greeting (3.3rem) (2026-11-25, the user) */
-@media (min-width: 761px) { .brand-name { font-size: 3.6rem; } }
+/* Desktops: the name bigger than the greeting (2026-11-25, the user; 3.6rem -> 4.2rem 2026-11-26) */
+@media (min-width: 761px) { .brand-name { font-size: 4.2rem; } .tagline { font-size: 1.2rem; } }
 /* Phones: the name still on one line (checked at 375, 360 and 320 px) */
 @media (max-width: 560px) {
   .dock { margin-top: calc(env(safe-area-inset-top, 0px) + 16px); }
   .brand-name { font-size: 2.4rem; }
+  .tagline { font-size: .92rem; }
   .seg.level button { padding: .45em .6em; font-size: .78rem; }
 }
 @media (max-width: 370px) { .brand-name { font-size: 2.1rem; } }
@@ -457,7 +462,7 @@ main { width: min(1120px, 100%); margin: 0 auto; padding: 0 18px 24px; }
   padding: 34px 6px 10px;
 }
 .hero h1 {
-  margin: 0; font-size: clamp(2rem, 4.2vw + 1rem, 3.3rem); font-weight: 600; line-height: 1.05; letter-spacing: -.01em;
+  margin: 0; font-size: clamp(1.75rem, 3.4vw + .9rem, 2.8rem);   /* a bit smaller 2026-11-26 (was 2 / 3.3rem) */ font-weight: 600; line-height: 1.05; letter-spacing: -.01em;
 }
 .lead { margin: 14px 0 0; max-width: 34em; font-size: 1.06rem; color: var(--ink); text-wrap: balance; }   /* no last word alone on a line */
 
@@ -649,9 +654,12 @@ main { width: min(1120px, 100%); margin: 0 auto; padding: 0 18px 24px; }
 @media (max-width: 760px) {
   .hero { grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 0; padding-top: 22px; }
   .hero-text { display: contents; }
-  .hero h1 { grid-column: 1; grid-row: 1; align-self: center; }
-  .hero-art { grid-column: 2; grid-row: 1; align-self: center; position: relative; width: 116px; height: 86px; pointer-events: none; }
-  .lead, .hero-go { grid-column: 1 / -1; }
+  /* 2026-11-26 (the user: the line under the greeting smaller and closer to it): greeting and line stacked in
+     column 1, the bubbles beside both (rows 1-2), so they still never touch the line */
+  .hero h1 { grid-column: 1; grid-row: 1; align-self: end; }
+  .hero-art { grid-column: 2; grid-row: 1 / 3; align-self: center; position: relative; width: 116px; height: 86px; pointer-events: none; }
+  .lead { grid-column: 1; grid-row: 2; align-self: start; margin-top: 6px; font-size: .95rem; line-height: 1.35; }
+  .hero-go { grid-column: 1 / -1; }
   .hb1 { width: 64px; height: 64px; left: 0; top: 22px; font-size: .8rem; }
   .hb2 { width: 50px; height: 50px; right: 0; top: 0; font-size: .7rem; }
   .hb3 { display: none; }
@@ -1094,6 +1102,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   <a class="brand" href="index.html" aria-label="English Bubbles, home">
     <span class="brand-name">English <b><i class="c-a1">B</i><i class="c-a2">u</i><i class="c-b1">b</i><i class="c-b2">b</i><i class="c-all">l</i><i class="c-a1">e</i><i class="c-a2">s</i></b></span>
   </a>
+  <p class="tagline"><span class="l-en" lang="en">a playful way to practise English</span><span class="l-pt" lang="pt-BR">uma forma lúdica de praticar o Inglês</span></p>
 </header>
 
 <main id="main">
@@ -1161,8 +1170,8 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
 <footer class="foot">
   <p class="foot-row"><span class="foot-ok" id="offline-ok"><span class="l-en" lang="en">Works offline</span><span class="l-pt" lang="pt-BR">Funciona sem internet</span></span>
      <button type="button" class="linkbtn" id="helplink"><span class="l-en" lang="en">How to install</span><span class="l-pt" lang="pt-BR">Como instalar</span></button>
-     <!-- from the 5th finished round on (src/inject/donate.js) -->
-     <button type="button" class="linkbtn donlink" id="donlink" hidden><span aria-hidden="true">♥</span> <span class="l-en" lang="en">Support the app</span><span class="l-pt" lang="pt-BR">Apoie o app</span></button></p>
+     <!-- always shown (2026-11-26, the user) -->
+     <button type="button" class="linkbtn donlink" id="donlink"><span aria-hidden="true">♥</span> <span class="l-en" lang="en">Support the app</span><span class="l-pt" lang="pt-BR">Apoie o app</span></button></p>
   <p class="foot-note"><span class="l-en" lang="en">No sign-up. Your progress is saved only on this device.</span><span class="l-pt" lang="pt-BR">Sem cadastro. Seu progresso fica salvo só neste aparelho.</span></p>
   <p class="foot-by"><span class="l-en" lang="en">Made by <b>Maurício Wolney</b></span><span class="l-pt" lang="pt-BR">Feito por <b>Maurício Wolney</b></span></p>
   <p class="foot-ver" id="version"></p>
@@ -1195,7 +1204,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="veil" aria-hidden="true"></div>
 
-<script>const APP = {"name":"English Bubbles","version":"a380ea48f4","built":"2026-11-25 09:49","games":[{"id":"verb-bubbles","title":"Be, Do or Modal?","category":"grammar","levels":["A1","A2"],"hue":337,"bubbles":["is","does","can","were","should"],"en":"Be, do and modals: drop the right word into the gap.","pt":"Be, do e modais: arraste a palavra certa para a lacuna.","added":"2026-11-08"},{"id":"pronouns","title":"Pronouns","category":"grammar","levels":["A1","A2"],"hue":188,"bubbles":["she","me","their","it","mine"],"en":"I, me, my or mine? Drag the right pronoun into the gap.","pt":"I, me, my ou mine? Arraste o pronome certo para a lacuna.","added":"2026-11-17"},{"id":"articles","title":"A, An or The?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":37,"bubbles":["a","an","the","an hour","the best","once a day","an idea"],"en":"A, an, the or nothing? Tap the gaps in short texts until they sound right.","pt":"A, an, the ou nada? Toque nas lacunas de textos curtos até soarem certo.","added":"2026-11-17"},{"id":"prepositions","title":"Prepositions","category":"grammar","levels":["A1","A2"],"hue":158,"bubbles":["in","on","at","for","to","by","from","of"],"en":"In, on, at, to, for: the prepositions Portuguese speakers mix up.","pt":"In, on, at, to, for: as preposições que mais confundem.","added":"2026-11-17"},{"id":"there-or-have","title":"There is or Have?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":220,"bubbles":["there is","has","there are","have","there was","there were","there will be","there shouldn't be"],"en":"There is or have? Drag the right words into the gap.","pt":"There is ou have? Arraste as palavras certas para a lacuna.","added":"2026-11-17"},{"id":"questions","title":"Wh- Questions","category":"grammar","levels":["A1","A2","B1"],"hue":287,"bubbles":["what","where","who","how many","why","when","which"],"en":"Build wh- questions word by word, then match them with their answers.","pt":"Monte perguntas com wh- palavra por palavra e ligue às respostas.","added":"2026-11-17"},{"id":"irregular-past","title":"Irregular Past","category":"grammar","levels":["A1","A2","B1"],"hue":21,"bubbles":["bought","saw","took","went","didn't go","didn't buy","didn't see","didn't take"],"en":"Pair irregular past verbs with their negatives, then fill short texts.","pt":"Ligue verbos irregulares no passado às negativas e complete textos.","added":"2026-11-17"},{"id":"comparatives","title":"Bigger, Better, Best","category":"grammar","levels":["A1","A2","B1+"],"hue":172,"bubbles":["bigger","more","the best","worse","tallest","the biggest","the most"],"en":"Comparatives and superlatives: tap each adjective to the right form.","pt":"Comparativos e superlativos: toque no adjetivo até a forma certa.","added":"2026-11-17"},{"id":"verb-wheel","title":"Verb Wheel","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":337,"bubbles":["I go","I went","I'll go","I've gone","I'd go","I should go","I used to go","I've been going"],"en":"Spin a verb through every tense, then use the right one in sentences.","pt":"Gire um verbo por todos os tempos e use o certo em frases.","added":"2026-11-17"},{"id":"present-perfect","title":"Perfect or Past?","category":"grammar","levels":["A2","B1","B2+"],"hue":228,"bubbles":["have been","already","yesterday","went","has","have gone","yet","ever"],"en":"Present perfect or past simple? Switch have / has on or off.","pt":"Present perfect ou past simple? Ligue ou desligue o have / has.","added":"2026-11-08"},{"id":"gerund-infinitive","title":"Doing or To Do?","category":"grammar","levels":["A2","B1","B2+"],"hue":30,"bubbles":["I love playing","I want to play","Learning is great","you have to go","you learn by doing","he needs to study"],"en":"To + verb or verb + -ing? Fix the verbs in short texts.","pt":"To + verbo ou verbo + -ing? Corrija os verbos em textos curtos.","added":"2026-11-08"},{"id":"conditionals","title":"Conditionals","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":158,"bubbles":["if","would","would have","had","will","If I were you"],"en":"Build if-sentences word by word, from zero to mixed conditionals.","pt":"Monte frases com if, palavra por palavra.","added":"2026-11-08"},{"id":"linking-words","title":"Linking Words","category":"grammar","levels":["A2","B1","B2+"],"hue":287,"bubbles":["but","however","so","although","because"],"en":"And, but, although, however: join ideas the natural way.","pt":"And, but, although, however: ligue ideias com naturalidade.","added":"2026-11-08"},{"id":"core-words","title":"Core Vocabulary","category":"vocabulary","levels":[],"hue":220,"bubbles":["know","often","enough","however","reach"],"en":"Test the most common English words you know, then practise the rest.","pt":"Teste as palavras mais comuns do inglês e pratique as que faltam.","added":"2026-11-17"},{"id":"false-friends","title":"False Friends","category":"vocabulary","levels":["A2","B1+"],"hue":337,"bubbles":["pretend","actually","push","parents","library"],"en":"Words that look like Portuguese but mean something else.","pt":"Palavras que parecem português, mas significam outra coisa.","added":"2026-11-17"},{"id":"phrasal-verbs","title":"Phrasal Verbs","category":"vocabulary","levels":["A2","B1+"],"hue":165,"bubbles":["give up","look after","turn off","run out","get on"],"en":"Make phrasal verbs, match their meanings, use them in sentences.","pt":"Forme phrasal verbs, ligue aos significados e use em frases.","added":"2026-11-08"},{"id":"word-families","title":"Word Families","category":"vocabulary","levels":["B1+"],"hue":30,"bubbles":["act","actor","action","active","actively"],"en":"Verb, noun, adjective, adverb: sort a word family, then fill the gaps.","pt":"Verbo, substantivo, adjetivo, advérbio: separe a família e complete.","added":"2026-11-17"},{"id":"idioms","title":"English Idioms","category":"vocabulary","levels":["B1","B2+"],"hue":250,"bubbles":["break the ice","piece of cake","spill the beans","on cloud nine"],"en":"Match idioms with their meanings, then put them in sentences.","pt":"Ligue expressões idiomáticas aos significados e complete frases.","added":"2026-11-08"},{"id":"stressed-syllables","title":"Stressed Syllables","category":"pronunciation","levels":[],"hue":287,"bubbles":["NAtion","reCORD","HOspital","MUsic","FAmily"],"en":"Words you already know, said with the right stress.","pt":"Palavras que você já conhece, com a sílaba tônica certa.","added":"2026-11-08"},{"id":"silent-letters","title":"Silent Letters","category":"pronunciation","levels":[],"hue":175,"bubbles":["know","climb","island","hour","listen"],"en":"Know, climb, island: find the letters English doesn't say.","pt":"Know, climb, island: encontre as letras que não se pronunciam.","added":"2026-11-17"}]};</script>
+<script>const APP = {"name":"English Bubbles","version":"e45fc47d49","built":"2026-11-26 17:53","games":[{"id":"verb-bubbles","title":"Be, Do or Modal?","category":"grammar","levels":["A1","A2"],"hue":337,"bubbles":["is","does","can","were","should"],"en":"Be, do and modals: drop the right word into the gap.","pt":"Be, do e modais: arraste a palavra certa para a lacuna.","added":"2026-11-08"},{"id":"there-or-have","title":"There is or Have?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":220,"bubbles":["there is","has","there are","have","there was","there were","there will be","there shouldn't be"],"en":"There is or have? Drag the right words into the gap.","pt":"There is ou have? Arraste as palavras certas para a lacuna.","added":"2026-11-17"},{"id":"questions","title":"Wh- Questions","category":"grammar","levels":["A1","A2","B1"],"hue":287,"bubbles":["what","where","who","how many","why","when","which"],"en":"Build wh- questions word by word, then match them with their answers.","pt":"Monte perguntas com wh- palavra por palavra e ligue às respostas.","added":"2026-11-17"},{"id":"irregular-past","title":"Irregular Past","category":"grammar","levels":["A1","A2","B1"],"hue":21,"bubbles":["bought","saw","took","went","didn't go","didn't buy","didn't see","didn't take"],"en":"Pair irregular past verbs with their negatives, then fill short texts.","pt":"Ligue verbos irregulares no passado às negativas e complete textos.","added":"2026-11-17"},{"id":"conditionals","title":"Conditionals","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":158,"bubbles":["if","would","would have","had","will","If I were you"],"en":"Build if-sentences word by word, from zero to mixed conditionals.","pt":"Monte frases com if, palavra por palavra.","added":"2026-11-08"},{"id":"pronouns","title":"Pronouns","category":"grammar","levels":["A1","A2"],"hue":188,"bubbles":["she","me","their","it","mine"],"en":"I, me, my or mine? Drag the right pronoun into the gap.","pt":"I, me, my ou mine? Arraste o pronome certo para a lacuna.","added":"2026-11-17"},{"id":"articles","title":"A, An or The?","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":37,"bubbles":["a","an","the","an hour","the best","once a day","an idea"],"en":"A, an, the or nothing? Tap the gaps in short texts until they sound right.","pt":"A, an, the ou nada? Toque nas lacunas de textos curtos até soarem certo.","added":"2026-11-17"},{"id":"verb-wheel","title":"Verb Wheel","category":"grammar","levels":["A1","A2","B1","B2+"],"hue":337,"bubbles":["I go","I went","I'll go","I've gone","I'd go","I should go","I used to go","I've been going"],"en":"Spin a verb through every tense, then use the right one in sentences.","pt":"Gire um verbo por todos os tempos e use o certo em frases.","added":"2026-11-17"},{"id":"comparatives","title":"Bigger, Better, Best","category":"grammar","levels":["A1","A2","B1+"],"hue":172,"bubbles":["bigger","more","the best","worse","tallest","the biggest","the most"],"en":"Comparatives and superlatives: tap each adjective to the right form.","pt":"Comparativos e superlativos: toque no adjetivo até a forma certa.","added":"2026-11-17"},{"id":"present-perfect","title":"Perfect or Past?","category":"grammar","levels":["A2","B1","B2+"],"hue":228,"bubbles":["have been","already","yesterday","went","has","have gone","yet","ever"],"en":"Present perfect or past simple? Switch have / has on or off.","pt":"Present perfect ou past simple? Ligue ou desligue o have / has.","added":"2026-11-08"},{"id":"linking-words","title":"Linking Words","category":"grammar","levels":["A2","B1","B2+"],"hue":287,"bubbles":["but","however","so","although","because"],"en":"And, but, although, however: join ideas the natural way.","pt":"And, but, although, however: ligue ideias com naturalidade.","added":"2026-11-08"},{"id":"prepositions","title":"Prepositions","category":"grammar","levels":["A1","A2"],"hue":158,"bubbles":["in","on","at","for","to","by","from","of"],"en":"In, on, at, to, for: the prepositions Portuguese speakers mix up.","pt":"In, on, at, to, for: as preposições que mais confundem.","added":"2026-11-17"},{"id":"gerund-infinitive","title":"Doing or To Do?","category":"grammar","levels":["A2","B1","B2+"],"hue":30,"bubbles":["I love playing","I want to play","Learning is great","you have to go","you learn by doing","he needs to study"],"en":"To + verb or verb + -ing? Fix the verbs in short texts.","pt":"To + verbo ou verbo + -ing? Corrija os verbos em textos curtos.","added":"2026-11-08"},{"id":"core-words","title":"Core Vocabulary","category":"vocabulary","levels":[],"hue":220,"bubbles":["know","often","enough","however","reach"],"en":"Test the most common English words you know, then practise the rest.","pt":"Teste as palavras mais comuns do inglês e pratique as que faltam.","added":"2026-11-17"},{"id":"false-friends","title":"False Friends","category":"vocabulary","levels":["A2","B1+"],"hue":337,"bubbles":["pretend","actually","push","parents","library"],"en":"Words that look like Portuguese but mean something else.","pt":"Palavras que parecem português, mas significam outra coisa.","added":"2026-11-17"},{"id":"phrasal-verbs","title":"Phrasal Verbs","category":"vocabulary","levels":["A2","B1+"],"hue":165,"bubbles":["give up","look after","turn off","run out","get on"],"en":"Make phrasal verbs, match their meanings, use them in sentences.","pt":"Forme phrasal verbs, ligue aos significados e use em frases.","added":"2026-11-08"},{"id":"word-families","title":"Word Families","category":"vocabulary","levels":["B1+"],"hue":30,"bubbles":["act","actor","action","active","actively"],"en":"Verb, noun, adjective, adverb: sort a word family, then fill the gaps.","pt":"Verbo, substantivo, adjetivo, advérbio: separe a família e complete.","added":"2026-11-17"},{"id":"idioms","title":"English Idioms","category":"vocabulary","levels":["B1","B2+"],"hue":250,"bubbles":["break the ice","piece of cake","spill the beans","on cloud nine"],"en":"Match idioms with their meanings, then put them in sentences.","pt":"Ligue expressões idiomáticas aos significados e complete frases.","added":"2026-11-08"},{"id":"stressed-syllables","title":"Stressed Syllables","category":"pronunciation","levels":[],"hue":287,"bubbles":["NAtion","reCORD","HOspital","MUsic","FAmily"],"en":"Words you already know, said with the right stress.","pt":"Palavras que você já conhece, com a sílaba tônica certa.","added":"2026-11-08"},{"id":"silent-letters","title":"Silent Letters","category":"pronunciation","levels":[],"hue":175,"bubbles":["know","climb","island","hour","listen"],"en":"Know, climb, island: find the letters English doesn't say.","pt":"Know, climb, island: encontre as letras que não se pronunciam.","added":"2026-11-17"}]};</script>
 <script>
 /* 00-util.js — small helpers shared by the menu's scripts: $, saved data (store / load never throw), esc, dates.
    The menu's saved keys all start with "eb-"; each game's keys start with "eb:<game id>:" (src/inject/game-head.html). */
@@ -2441,6 +2450,10 @@ document.addEventListener("keydown", (e) => {
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
     lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
   };
+  // Visitor stats (Umami, 2026-11-26, the user): a few named events; nothing personal is sent. umami is
+  // missing offline, in previews (not counted) or when blocked: then nothing happens.
+  var GAME = (location.pathname.match(/\/games\/([^\/]+)\.html$/) || [])[1] || "menu";
+  function stat(name, data) { try { if (window.umami && umami.track) umami.track(name, data); } catch (e) {} }
   function rounds() { return parseInt(A.get("eb-rounds"), 10) || 0; }
   function state() {
     var s = { next: FIRST, line: FIRST, asks: 0, off: false, gave: false };
@@ -2514,6 +2527,7 @@ document.addEventListener("keydown", (e) => {
   function copied() {
     el.querySelector(".ebd-done").hidden = false;
     el.querySelector(".ebd-code").hidden = true;
+    stat("PIX code copied", { amount: PIX.codes[pick].label, game: GAME });
     var s = state(); s.gave = true; save(s);       // no more pop-ups; the line in the games comes less often
     ding(659.25); setTimeout(function () { ding(987.77); }, 90);
   }
@@ -2532,6 +2546,7 @@ document.addEventListener("keydown", (e) => {
     if (!el) build();
     if (!el.hidden) return;
     mode = how || "manual";
+    stat("Support opened", { from: mode === "ask" ? "menu pop-up" : GAME === "menu" ? "menu link" : "game line", game: GAME });
     back = document.activeElement;
     el.dataset.lang = A.lang();
     el.classList.remove("qr-on");
@@ -2565,7 +2580,7 @@ document.addEventListener("keydown", (e) => {
   // ------------------------------------------------------------ the menu: the pop-up and the footer link
   if (inMenu) {
     var link = document.getElementById("donlink");
-    var showLink = function () { if (link) link.hidden = rounds() < FIRST; };
+    var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
     var ask = function () {
       showLink();
@@ -2590,6 +2605,7 @@ document.addEventListener("keydown", (e) => {
     lastFp = fp;
     var n = rounds() + 1;
     A.set("eb-rounds", String(n));
+    stat("Round finished", { game: GAME });
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();

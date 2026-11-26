@@ -100,15 +100,35 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
       var lv = get.call(L, "eb-level");
       return lv === "B1" || lv === "B2+" ? "en" : "pt";
     }
+    /* The sound-effects volume too (2026-11-26, the user): ONE for the whole app, the menu's "eb-vol" (0-100,
+       0 = sound off). Every game saves "<prefix>-vol" (0-100, its Effects slider) plus an on / off key:
+       "<prefix>-snd" ("0" = off) or "<prefix>-mute" ("1" = off). Reading them gives the menu's volume (menu at 0:
+       the game opens muted, its slider where it was); after a game writes either, eb-vol = 0 if muted, else its
+       slider. The Voice slider ("-vvol") stays each game's own. */
+    var VOL = /^[a-z]+-vol$/, MUTE = /^[a-z]+-(snd|mute)$/;
+    function own(k) { return get.call(L, P + k); }
+    function syncVol(k) {
+      var pre = k.slice(0, k.indexOf("-")), v = parseInt(own(pre + "-vol"), 10);
+      if (isNaN(v) || v < 0 || v > 100) return;
+      var off = own(pre + "-snd") === "0" || own(pre + "-mute") === "1";
+      set.call(L, "eb-vol", String(off ? 0 : v));
+    }
     S.getItem = function (k) {
       if (this === L && BG.test(k)) { var app = get.call(this, "eb-bg"); if (app) return app; }
+      if (this === L && (VOL.test(k) || MUTE.test(k))) {
+        var ev = get.call(this, "eb-vol");
+        if (ev !== null && VOL.test(k) && ev !== "0") return ev;
+        if (ev !== null && MUTE.test(k)) { var off = ev === "0"; return /-snd$/.test(k) ? (off ? "0" : "1") : (off ? "1" : "0"); }
+      }
       if (this === L && LG.hasOwnProperty(k)) return appLang() === "en" ? "en" : LG[k];
       return get.call(this, this === L ? P + k : k);
     };
     S.setItem = function (k, v) {
       if (this === L && BG.test(k)) set.call(this, "eb-bg", v);
       if (this === L && LG.hasOwnProperty(k)) set.call(this, "eb-lang", String(v) === "en" ? "en" : "pt");
-      return set.call(this, this === L ? P + k : k, v);
+      var r = set.call(this, this === L ? P + k : k, v);
+      if (this === L && (VOL.test(k) || MUTE.test(k))) syncVol(k);
+      return r;
     };
     S.removeItem = function (k) { return del.call(this, this === L ? P + k : k); };
     /* The app's own keys (eb-rounds, eb-don…) and language, for the injected donation script (donate.js) */
@@ -128,6 +148,8 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
 </script>
 <meta name="theme-color" content="#e4f3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141964" media="(prefers-color-scheme: dark)">
+<!-- visitor stats (Umami Cloud, no cookies; 2026-11-26, the user): counted only on the real site, not in previews / phone tests -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="daf44de3-d4a0-4383-820b-9763a6abf9b1" data-domains="www.englishbubbles.com.br,englishbubbles.com.br"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="English Bubbles">
@@ -1080,6 +1102,17 @@ html:has(.favmodal.show), html:has(.tour:not([hidden])) { overflow: hidden; over
 .gd-tag.gd-estar { background: hsl(190, 70%, 40%); }
 .gd-pt .lit { font-style: italic; opacity: .9; }
 .gd-pt .sfx { color: var(--underline); font-weight: 600; }
+
+/* a hint's groups (gdHint): one line each, or pills for a plain list (the user's choice, 2026-11-26: no " · ") */
+.gd-hint { display: block; margin-top: 6px; font-size: .84rem; line-height: 1.4; }
+.gd-hl { display: block; padding-left: 10px; border-left: 2px solid color-mix(in srgb, currentColor 22%, transparent); }
+.gd-hl + .gd-hl, .gd-htail { margin-top: 5px; }
+.gd-htail { display: block; opacity: .72; }
+.gd-cue { opacity: .72; }
+.gd-harr { opacity: .45; }
+.gd-hex { font-weight: 600; }
+.gd-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.gd-pill { padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, currentColor 9%, transparent); border: 1px solid color-mix(in srgb, currentColor 16%, transparent); }
 /* 80-scrollbar: Scrollbars as in There Be or Have (../therebeorhave, styles.css; first from the gerund game): in the cards that scroll
    (Favoritas / Vistas, end of round, Streaks, tutorial) a thin glossy pill with the pink-to-purple gradient on a clear
    track; the page itself has none. Chrome / Edge / Safari use the ::-webkit-scrollbar parts; Firefox only takes
@@ -1798,7 +1831,7 @@ function newRound(ids) {
   startRound(ids ? balancedPick(ids) : draw(focus));
 }
 function startRound(pick) {
-  clearTimeout(timer); hush(); closeModals(); stopSpeed();
+  clearTimeout(timer); closeModals(); stopSpeed();
   queue = noTriples(shuffle(pick.map(function (i) { return S[i]; })), recentA.slice(-2)); idx = 0; nBuild = queue.length >= 6 ? BUILD_N : 0; buildAt = Math.floor(queue.length / 2); total = queue.length + nBuild; done = 0;   /* the Build sentences count as sentences of the game */
   firstOk = 0; retried = {}; missedNow = []; played = []; buildDone = false; builds = []; roundBest = 0;
   stats = {}; FAMS.forEach(function (f) { stats[f.id] = { n: 0, ok: 0 }; });
@@ -2098,7 +2131,7 @@ function showNext(el, ms) {
 var PRAISE = ["Correct!", "Nice!", "That's it!", "Well done!", "Yes!", "Great!"];
 function praise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)]; }
 function next() {
-  clearTimeout(timer); hush();
+  clearTimeout(timer);   /* no hush(): the sentence read after the answer finishes (the next clip stops it) */
   if (!locked) return;
   idx++;
   if (idx >= queue.length) finish(); else if (buildDue()) startBuild(); else show();   /* the Build round comes in the middle (19-build.js) */
@@ -2394,7 +2427,7 @@ function startBuild() {
   var list = bPick();
   total -= nBuild - list.length; nBuild = list.length;   /* fewer suitable sentences: the game is that much shorter */
   if (!list.length) { buildDone = true; show(); return; }
-  clearTimeout(timer); hush(); clearArc(); select(null); locked = true;
+  clearTimeout(timer); clearArc(); select(null); locked = true;
   building = { list: list, k: 0 };
   document.body.classList.add("building"); buildEl.hidden = false;
   bShow();
@@ -2542,7 +2575,7 @@ function hideBuild() {
 }
 bNext.addEventListener("click", function () {
   if (!building || !building.done) return;
-  hush(); building.k++;
+  building.k++;
   if (building.k < building.list.length) { bShow(); return; }
   built = building.list.map(function (s) { return s.id; }).concat(built.filter(function (i) { return building.list.every(function (s) { return s.id !== i; }); })).slice(0, 60);
   store("vb-built", JSON.stringify(built));
@@ -2629,7 +2662,7 @@ function famBars() {
 function playedLi(r) { return itemLi(S[r.id], r.ok ? '<span class="rk ok">' + esc(rv()[4]) + '</span>' : '<span class="rk bad">' + esc(rv()[5]) + '</span>', true); }
 var endKind = "normal";
 function finish() {
-  cur = null; hush(); clearArc(); endKind = "normal";
+  cur = null; clearArc(); endKind = "normal";
   $("pfill").style.width = "100%"; $("proglbl").textContent = "Game complete";
   var pct = firstOk / total;
   $("endtitle").textContent = "Game complete!"; $("endagain").textContent = "Play again";
@@ -2899,14 +2932,28 @@ function gdLv(x) { return level === "A2" || !x.lv || x.lv === "A1"; }
 function gdChip(w, cls) { return '<span class="gd-w' + (cls ? " " + cls : "") + '" style="--h:' + famOf[w].h + '">' + esc(w) + "</span>"; }
 /* who takes each be / do word, and what each modal means */
 var GD_WHO = {
-  pt: { am: "I", is: "he, she, it", are: "you, we, they", was: "I, he, she, it · passado", were: "you, we, they · passado", "do": "I, you, we, they", does: "he, she, it", did: "todos · passado" },
-  en: { am: "I", is: "he, she, it", are: "you, we, they", was: "I, he, she, it · past", were: "you, we, they · past", "do": "I, you, we, they", does: "he, she, it", did: "everyone · past" }
+  pt: { am: "I", is: "he, she, it", are: "you, we, they", was: "I, he, she, it (passado)", were: "you, we, they (passado)", "do": "I, you, we, they", does: "he, she, it", did: "todos (passado)" },
+  en: { am: "I", is: "he, she, it", are: "you, we, they", was: "I, he, she, it (past)", were: "you, we, they (past)", "do": "I, you, we, they", does: "he, she, it", did: "everyone (past)" }
 };
 var GD_MEAN = { pt: { can: MEAN.can, could: MEAN.could, will: MEAN.will, would: MEAN.would, should: MEAN.should, must: "obrigação forte (tem que, deve)", might: MEAN.might }, en: { can: "ability or permission (consegue, sabe, pode)", could: "was able, or a polite request (podia, poderia)", will: "future or a promise (-rá)",
   would: "-ria: imagining, offering, asking politely", should: "advice (deveria)", must: "strong obligation (tem que, deve)", might: "maybe (pode ser que)" } };
 /* A sentence in English with its answer in, the answer in its family's color; its translation with the deciding word in pink */
 function gdSent(s) { var p = plain(gapParts(s).join("___")).split("___"), w = formIn(s, s.a); return esc(p[0]) + '<b class="gd-a" style="--h:' + famOf[s.a].h + '">' + esc(w) + "</b>" + esc(p[1]); }
 /* the · between items gets room on both sides */
+/* a hint: its " · " groups drawn apart (the dots read as clutter: the user's choice, 2026-11-26). Groups with a cue
+   (cue → example, or cue: example) each get a line, the cue dim and the example bold; a plain list becomes pills. f formats a piece (esc by default). */
+function gdHint(h, f) {
+  f = f || esc;
+  var g = String(h).split(/\s*·\s*/), tail = "", cut = function (x) { var k = x.indexOf(" → "); return k >= 0 ? [k, 3] : (k = x.indexOf(": ")) >= 0 ? [k, 2] : null; };
+  if (g.length < 2) return '<small>' + f(h) + "</small>";
+  if (!g.some(cut)) return '<span class="gd-hint gd-pills">' + g.map(function (x) { return '<span class="gd-pill">' + f(x) + "</span>"; }).join("") + "</span>";
+  var m = g[g.length - 1].match(/^(.*?\.)\s+(\S.*)$/);   /* a sentence after the last group goes under the lines */
+  if (m && cut(m[1])) { g[g.length - 1] = m[1]; tail = m[2]; }
+  return '<span class="gd-hint">' + g.map(function (x) {
+    var c = cut(x); x = x.replace(/\.$/, "");
+    return '<span class="gd-hl">' + (c ? '<span class="gd-cue">' + f(x.slice(0, c[0])) + "</span>" + (c[1] === 3 ? ' <span class="gd-harr" aria-hidden="true">→</span> ' : ": ") + '<span class="gd-hex">' + f(x.slice(c[0] + c[1])) + "</span>" : f(x)) + "</span>";
+  }).join("") + (tail ? '<span class="gd-htail">' + f(tail) + "</span>" : "") + "</span>";
+}
 function gdDots(h) { return h.replace(/\s*·\s*/g, ' <span class="gd-dot">·</span> '); }
 function gdPt(t) { return esc(t).replace(/\{([^}]+)\}/g, '<b class="gd-p">$1</b>').replace(/[\[\]^]/g, ""); }
 /* Up to two examples of a word at this level: its shortest statement and its shortest question */
@@ -2944,7 +2991,7 @@ function gdAsk(g) {
   return '<p class="gd-tip"><span aria-hidden="true">💡</span><span>' + g.tip + "</span></p>" +
     '<div class="gd-ask"><p class="gd-h">' + esc(g.askTitle) + "</p>" + g.ask.filter(gdLv).map(function (q, n) {
       var ans = (q.ans || []).filter(okWord).map(function (w) { return gdChip(w); }).join("");
-      return '<div class="gd-q"><div class="gd-qt"><b>' + (n + 1) + ". " + esc(q.q) + "</b><small>" + gdDots(esc(level === "A1" && q.a1 || q.hint)) + '</small></div><span class="gd-ans"><span class="gd-arrow" aria-hidden="true">→</span>' + ans + "</span></div>";
+      return '<div class="gd-q"><div class="gd-qt"><b>' + (n + 1) + ". " + esc(q.q) + "</b>" + gdHint(level === "A1" && q.a1 || q.hint) + '</div><span class="gd-ans"><span class="gd-arrow" aria-hidden="true">→</span>' + ans + "</span></div>";
     }).join("") + "</div>";
 }
 /* A table: a row per subject group, a column per tense (the past only at A2) */
@@ -3654,7 +3701,7 @@ newRound();
   }
   function place() {
     tight(false);
-    side(false); compact(0);
+    side(false); compact(0); a.style.order = "";
     if (desk && desk.matches) {
       if (a.parentNode) a.parentNode.removeChild(a);
       var h0 = height();                                     // the header as the game made it
@@ -3668,6 +3715,14 @@ newRound();
     var at = a.parentNode ? [a.parentNode, a.nextSibling] : null;
     if (a.parentNode) a.parentNode.removeChild(a);
     var base = height();                                     // the header as the game made it
+    // English Idioms (2026-11-26, the user): far left of its bottom row = before its Guide button. That row is
+    // made by CSS `order` (the bottom-row buttons have order 2, a ::after line break order 1), so take its order.
+    var gb = /\/idioms\.html$/.test(location.pathname) && dock.querySelector(":scope > #guidebtn");
+    if (gb) {
+      dock.insertBefore(a, gb); a.style.order = getComputedStyle(gb).order;
+      if (height() <= base + 4) return;
+      a.style.order = "";
+    }
     if (at) at[0].insertBefore(a, at[1]); else dock.appendChild(a);
     if (best() <= base + 4) return;
     tight(true);
@@ -3800,6 +3855,10 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
     lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
   };
+  // Visitor stats (Umami, 2026-11-26, the user): a few named events; nothing personal is sent. umami is
+  // missing offline, in previews (not counted) or when blocked: then nothing happens.
+  var GAME = (location.pathname.match(/\/games\/([^\/]+)\.html$/) || [])[1] || "menu";
+  function stat(name, data) { try { if (window.umami && umami.track) umami.track(name, data); } catch (e) {} }
   function rounds() { return parseInt(A.get("eb-rounds"), 10) || 0; }
   function state() {
     var s = { next: FIRST, line: FIRST, asks: 0, off: false, gave: false };
@@ -3873,6 +3932,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   function copied() {
     el.querySelector(".ebd-done").hidden = false;
     el.querySelector(".ebd-code").hidden = true;
+    stat("PIX code copied", { amount: PIX.codes[pick].label, game: GAME });
     var s = state(); s.gave = true; save(s);       // no more pop-ups; the line in the games comes less often
     ding(659.25); setTimeout(function () { ding(987.77); }, 90);
   }
@@ -3891,6 +3951,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     if (!el) build();
     if (!el.hidden) return;
     mode = how || "manual";
+    stat("Support opened", { from: mode === "ask" ? "menu pop-up" : GAME === "menu" ? "menu link" : "game line", game: GAME });
     back = document.activeElement;
     el.dataset.lang = A.lang();
     el.classList.remove("qr-on");
@@ -3924,7 +3985,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   // ------------------------------------------------------------ the menu: the pop-up and the footer link
   if (inMenu) {
     var link = document.getElementById("donlink");
-    var showLink = function () { if (link) link.hidden = rounds() < FIRST; };
+    var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
     var ask = function () {
       showLink();
@@ -3949,6 +4010,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     lastFp = fp;
     var n = rounds() + 1;
     A.set("eb-rounds", String(n));
+    stat("Round finished", { game: GAME });
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();

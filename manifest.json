@@ -14,7 +14,7 @@
   ],
   "orientation": "any",
   "background_color": "#141964",
-  "theme_color": "#141964",
+  "theme_color": "#5c5c5c",
   "categories": [
     "education",
     "games"
@@ -60,39 +60,39 @@
       ]
     },
     {
-      "name": "Pronouns",
-      "short_name": "Pronouns",
-      "description": "I, me, my or mine? Drag the right pronoun into the gap.",
-      "url": "games/pronouns.html",
+      "name": "There is or Have?",
+      "short_name": "There is or Have?",
+      "description": "There is or have? Drag the right words into the gap.",
+      "url": "games/there-or-have.html",
       "icons": [
         {
-          "src": "icons/game-188.png?v=a551d7bb",
+          "src": "icons/game-220.png?v=a551d7bb",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "A, An or The?",
-      "short_name": "A, An or The?",
-      "description": "A, an, the or nothing? Tap the gaps in short texts until they sound right.",
-      "url": "games/articles.html",
+      "name": "Wh- Questions",
+      "short_name": "Wh- Questions",
+      "description": "Build wh- questions word by word, then match them with their answers.",
+      "url": "games/questions.html",
       "icons": [
         {
-          "src": "icons/game-37.png?v=a551d7bb",
+          "src": "icons/game-287.png?v=a551d7bb",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "Prepositions",
-      "short_name": "Prepositions",
-      "description": "In, on, at, to, for: the prepositions Portuguese speakers mix up.",
-      "url": "games/prepositions.html",
+      "name": "Irregular Past",
+      "short_name": "Irregular Past",
+      "description": "Pair irregular past verbs with their negatives, then fill short texts.",
+      "url": "games/irregular-past.html",
       "icons": [
         {
-          "src": "icons/game-158.png?v=a551d7bb",
+          "src": "icons/game-21.png?v=a551d7bb",
           "sizes": "96x96",
           "type": "image/png"
         }

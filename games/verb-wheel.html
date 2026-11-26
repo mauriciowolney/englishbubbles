@@ -100,15 +100,35 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
       var lv = get.call(L, "eb-level");
       return lv === "B1" || lv === "B2+" ? "en" : "pt";
     }
+    /* The sound-effects volume too (2026-11-26, the user): ONE for the whole app, the menu's "eb-vol" (0-100,
+       0 = sound off). Every game saves "<prefix>-vol" (0-100, its Effects slider) plus an on / off key:
+       "<prefix>-snd" ("0" = off) or "<prefix>-mute" ("1" = off). Reading them gives the menu's volume (menu at 0:
+       the game opens muted, its slider where it was); after a game writes either, eb-vol = 0 if muted, else its
+       slider. The Voice slider ("-vvol") stays each game's own. */
+    var VOL = /^[a-z]+-vol$/, MUTE = /^[a-z]+-(snd|mute)$/;
+    function own(k) { return get.call(L, P + k); }
+    function syncVol(k) {
+      var pre = k.slice(0, k.indexOf("-")), v = parseInt(own(pre + "-vol"), 10);
+      if (isNaN(v) || v < 0 || v > 100) return;
+      var off = own(pre + "-snd") === "0" || own(pre + "-mute") === "1";
+      set.call(L, "eb-vol", String(off ? 0 : v));
+    }
     S.getItem = function (k) {
       if (this === L && BG.test(k)) { var app = get.call(this, "eb-bg"); if (app) return app; }
+      if (this === L && (VOL.test(k) || MUTE.test(k))) {
+        var ev = get.call(this, "eb-vol");
+        if (ev !== null && VOL.test(k) && ev !== "0") return ev;
+        if (ev !== null && MUTE.test(k)) { var off = ev === "0"; return /-snd$/.test(k) ? (off ? "0" : "1") : (off ? "1" : "0"); }
+      }
       if (this === L && LG.hasOwnProperty(k)) return appLang() === "en" ? "en" : LG[k];
       return get.call(this, this === L ? P + k : k);
     };
     S.setItem = function (k, v) {
       if (this === L && BG.test(k)) set.call(this, "eb-bg", v);
       if (this === L && LG.hasOwnProperty(k)) set.call(this, "eb-lang", String(v) === "en" ? "en" : "pt");
-      return set.call(this, this === L ? P + k : k, v);
+      var r = set.call(this, this === L ? P + k : k, v);
+      if (this === L && (VOL.test(k) || MUTE.test(k))) syncVol(k);
+      return r;
     };
     S.removeItem = function (k) { return del.call(this, this === L ? P + k : k); };
     /* The app's own keys (eb-rounds, eb-don…) and language, for the injected donation script (donate.js) */
@@ -128,6 +148,8 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
 </script>
 <meta name="theme-color" content="#e4f3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141964" media="(prefers-color-scheme: dark)">
+<!-- visitor stats (Umami Cloud, no cookies; 2026-11-26, the user): counted only on the real site, not in previews / phone tests -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="daf44de3-d4a0-4383-820b-9763a6abf9b1" data-domains="www.englishbubbles.com.br,englishbubbles.com.br"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="English Bubbles">
@@ -1798,7 +1820,10 @@ var TR = TR_STRUCTURES; // src/data/tr_structures.json
 // Portuguese only: "I have done" and "I've been doing" have several translations, and "I have done" needs an explanation.
 var PT_ONEOFF = Object.create(null);
 "die arrive finish find win reach kill explode marry graduate retire resign divorce propose".split(" ").forEach(function (w) { PT_ONEOFF[w] = 1; });
-var PT_NOTE_PERFECT = "Na maioria dos casos, o present perfect vira pretérito simples, geralmente com “já”: I have eaten → “Já comi.”; I have been to Paris → “Já estive em Paris.”";
+// The present perfect has two uses, and each one translates differently: a finished action (pretérito,
+// usually with "já") or something that started before and is still true (presente + "há" / "desde").
+var PT_NOTE_PERFECT = "Ação terminada (não importa quando, importa o resultado ou a experiência): vira pretérito simples, geralmente com “já”: I have eaten → “Já comi.”; I have been to Paris → “Já estive em Paris.”";
+var PT_NOTE_STILL = "Algo que começou no passado e ainda é verdade agora (com for / since): vira presente + “há” / “desde”: I have lived here for two years → “Moro aqui há dois anos.”; I have known Ana since 2010 → “Conheço a Ana desde 2010.”";
 var PT_NOTE_TENHO = "Use “%tenho% + particípio” quando a ação se repete ou o estado continua até agora: I have been busy lately → “Tenho estado ocupado.” Não serve para uma ação única e concluída.";
 // Portuguese helper verbs for each pronoun, in the order of PRON: I, you (você), he, she, it, we, they.
 var PT_CONJ = {
@@ -1832,9 +1857,14 @@ function trFor(lang, idx, base, pi) {
   if (!list || !list[idx] && !(lang === "portuguese" && (idx === 6 || idx === 7))) return null;
   var out;
   if (lang === "portuguese" && idx === 6) {
-    var lines = ["{pretérito simples} (com “já”)"], notes = [PT_NOTE_PERFECT];
+    // Each line ends with an example in the card's own verb and pronoun (02-pt-verb-forms.js), when it has one.
+    var ex = ptPerfectExamples(base, pi || 0);
+    var lines = ["{pretérito simples}: ação terminada" + (ex ? ". ex: " + ex.pret : "")], notes = [PT_NOTE_PERFECT];
+    // One-off verbs (die, arrive...) can't be "still true", so they get only the finished-action reading.
     if (!PT_ONEOFF[base]) {
-      lines.push(base === "be" ? "%tenho% + {particípio} (%tenho% estado)" : "%tenho% + {particípio}");
+      lines.push("{presente} + há / desde: ainda é verdade" + (ex ? ". ex: " + ex.pres : ""));
+      notes.push(PT_NOTE_STILL);
+      lines.push("%tenho% + {particípio}" + (ex ? ": ex: %tenho% " + ex.part : ""));
       notes.push(PT_NOTE_TENHO);
     }
     out = { lines: lines, notes: notes };
@@ -1855,6 +1885,102 @@ function trFor(lang, idx, base, pi) {
 // Data: src/data/pt_verbs.json (PT_VERBS)
 var PT_VERB = Object.create(null);
 Object.keys(PT_VERBS).forEach(function (v) { PT_VERB[v] = PT_VERBS[v]; });
+// Portuguese forms of any card verb (presente, pretérito, particípio), for the examples on the present perfect card
+// ("Já comi.", "como há um tempo", "tenho comido"). Unlike the bonus round, the card shows every verb, so this handles
+// the irregular and spelling-change verbs that appear in pt_verbs.json. Regular forms come from ptForms (17-bonus.js,
+// loaded later but only called when a card is drawn). Persons as in the bonus: 0 eu, 1 você / ele / ela, 2 nós, 3 eles.
+
+// Fully irregular verbs: "inf=presente (4);pretérito (4);particípio". Compounds (manter, compor, refazer...) are
+// built from their root in PT_IRR_PREFIX, which is why the roots are written without accents where a prefix moves them.
+var PT_IRR_FORMS = {};
+("ser=sou,é,somos,são;fui,foi,fomos,foram;sido|estar=estou,está,estamos,estão;estive,esteve,estivemos,estiveram;estado|" +
+ "ir=vou,vai,vamos,vão;fui,foi,fomos,foram;ido|dar=dou,dá,damos,dão;dei,deu,demos,deram;dado|" +
+ "ter=tenho,tem,temos,têm;tive,teve,tivemos,tiveram;tido|vir=venho,vem,vimos,vêm;vim,veio,viemos,vieram;vindo|" +
+ "ver=vejo,vê,vemos,veem;vi,viu,vimos,viram;visto|pôr=ponho,põe,pomos,põem;pus,pôs,pusemos,puseram;posto|" +
+ "fazer=faço,faz,fazemos,fazem;fiz,fez,fizemos,fizeram;feito|dizer=digo,diz,dizemos,dizem;disse,disse,dissemos,disseram;dito|" +
+ "trazer=trago,traz,trazemos,trazem;trouxe,trouxe,trouxemos,trouxeram;trazido|saber=sei,sabe,sabemos,sabem;soube,soube,soubemos,souberam;sabido|" +
+ "poder=posso,pode,podemos,podem;pude,pôde,pudemos,puderam;podido|querer=quero,quer,queremos,querem;quis,quis,quisemos,quiseram;querido|" +
+ "ler=leio,lê,lemos,leem;li,leu,lemos,leram;lido|crer=creio,crê,cremos,creem;cri,creu,cremos,creram;crido|" +
+ "caber=caibo,cabe,cabemos,cabem;coube,coube,coubemos,couberam;cabido|rir=rio,ri,rimos,riem;ri,riu,rimos,riram;rido|" +
+ "moer=moo,mói,moemos,moem;moí,moeu,moemos,moeram;moído|perder=perco,perde,perdemos,perdem;perdi,perdeu,perdemos,perderam;perdido|" +
+ "ouvir=ouço,ouve,ouvimos,ouvem;ouvi,ouviu,ouvimos,ouviram;ouvido").split("|").forEach(function (e) {
+  var f = e.split("="), p = f[1].split(";");
+  PT_IRR_FORMS[f[0]] = { pres: p[0].split(","), pret: p[1].split(","), part: p[2] };
+});
+// Compound → [prefix, root]. Ter and vir compounds take an accent the root doesn't have (mantém, intervém).
+var PT_IRR_PREFIX = { sorrir: ["sor", "rir"], reler: ["re", "ler"], prever: ["pre", "ver"], predizer: ["pre", "dizer"],
+  desfazer: ["des", "fazer"], refazer: ["re", "fazer"], satisfazer: ["satis", "fazer"], intervir: ["inter", "vir"] };
+"man con ob de re entre".split(" ").forEach(function (p) { PT_IRR_PREFIX[p + "ter"] = [p, "ter"]; });
+"com dis ex im o pro su".split(" ").forEach(function (p) { PT_IRR_PREFIX[p + "por"] = [p, "pôr"]; });
+// Present with a different stem in some persons: "inf=eu,ele,nós,eles" (the pretérito stays regular).
+var PT_PRES = {};
+("pedir=peço,pede,pedimos,pedem|medir=meço,mede,medimos,medem|impedir=impeço,impede,impedimos,impedem|" +
+ "dormir=durmo,dorme,dormimos,dormem|cobrir=cubro,cobre,cobrimos,cobrem|descobrir=descubro,descobre,descobrimos,descobrem|" +
+ "tossir=tusso,tosse,tossimos,tossem|engolir=engulo,engole,engolimos,engolem|polir=pulo,pule,polimos,pulem|" +
+ "subir=subo,sobe,subimos,sobem|fugir=fujo,foge,fugimos,fogem|sacudir=sacudo,sacode,sacudimos,sacodem|" +
+ "cuspir=cuspo,cospe,cuspimos,cospem|consumir=consumo,consome,consumimos,consomem|sumir=sumo,some,sumimos,somem|" +
+ "agredir=agrido,agride,agredimos,agridem|progredir=progrido,progride,progredimos,progridem|" +
+ "odiar=odeio,odeia,odiamos,odeiam|mediar=medeio,medeia,mediamos,medeiam|" +
+ "construir=construo,constrói,construímos,constroem|destruir=destruo,destrói,destruímos,destroem|" +
+ "reconstruir=reconstruo,reconstrói,reconstruímos,reconstroem").split("|").forEach(function (e) {
+  var f = e.split("="); PT_PRES[f[0]] = f[1].split(",");
+});
+// Only "eu" changes (e → i, o → u...): sinto, sirvo, prefiro, sigo.
+var PT_PRES_EU = {};
+("sentir=sinto mentir=minto servir=sirvo vestir=visto revestir=revisto despir=dispo preferir=prefiro repetir=repito " +
+ "seguir=sigo conseguir=consigo perseguir=persigo prosseguir=prossigo ferir=firo sugerir=sugiro conferir=confiro " +
+ "diferir=difiro inferir=infiro interferir=interfiro referir=refiro transferir=transfiro competir=compito " +
+ "divertir=divirto investir=invisto inserir=insiro refletir=reflito distinguir=distingo").split(" ").forEach(function (e) {
+  var f = e.split("="); PT_PRES_EU[f[0]] = f[1];
+});
+// Participles that aren't -ado / -ido (the bonus's short forms, plus escrever and abrir compounds).
+var PT_PART_CARD = { escrever: "escrito", descrever: "descrito", reescrever: "reescrito", abrir: "aberto", reabrir: "reaberto",
+  cobrir: "coberto", descobrir: "descoberto", pagar: "pago", ganhar: "ganho", gastar: "gasto", aceitar: "aceito" };
+
+function ptCardForms(inf) {
+  var c = PT_IRR_PREFIX[inf], r;
+  if (c) {
+    r = PT_IRR_FORMS[c[1]];
+    var add = function (w) { return c[0] + w.replace(/^tem$/, "tém").replace(/^vem$/, "vém").replace(/^pôr$/, "por"); };
+    return { pres: r.pres.map(add), pret: r.pret.map(function (w) { return c[0] + w; }), part: c[0] + r.part };
+  }
+  if (PT_IRR_FORMS[inf]) return PT_IRR_FORMS[inf];
+  var st = inf.slice(0, -2), F;
+  if (/air$/.test(inf)) { // cair, sair, trair, atrair...: caio, cai, caímos, caem
+    st = inf.slice(0, -1);
+    return { pres: [st + "o", st, st.slice(0, -1) + "ímos", st.slice(0, -1) + "em"],
+             pret: [st.slice(0, -1) + "í", st + "u", st.slice(0, -1) + "ímos", st.slice(0, -1) + "íram"], part: st.slice(0, -1) + "ído" };
+  }
+  if (/uir$/.test(inf) && !/guir$/.test(inf)) { // incluir, diminuir, possuir: inclui, incluímos, incluído
+    F = { pres: [st + "o", st + "i", st + "ímos", st + "em"], pret: [st + "í", st + "iu", st + "ímos", st + "íram"], part: st + "ído" };
+    if (PT_PRES[inf]) F.pres = PT_PRES[inf];
+    return F;
+  }
+  F = ptForms(inf);
+  F = { pres: F.pres.slice(), pret: F.pret.slice(), part: PT_PART_CARD[inf] || F.part };
+  if (/ear$/.test(inf)) F.pres = [st + "io", st + "ia", st + "amos", st + "iam"]; // nomeio, passeia
+  else if (/uzir$/.test(inf)) F.pres[1] = st; // produz, traduz (st is "produz")
+  if (PT_PRES[inf]) F.pres = PT_PRES[inf].slice();
+  else if (PT_PRES_EU[inf]) F.pres[0] = PT_PRES_EU[inf];
+  else if (/cer$/.test(inf)) F.pres[0] = st.slice(0, -1) + "ço"; // conheço
+  else if (/g[ei]r$/.test(inf)) F.pres[0] = st.slice(0, -1) + "jo"; // protejo, dirijo
+  else if (/guir$/.test(inf)) F.pres[0] = st.slice(0, -1) + "o";
+  return F;
+}
+// The card's three examples for an English verb and pronoun (pi, place in PRON), or null when its Portuguese isn't a
+// plain verb. Reflexive verbs put the pronoun first, as Brazilians say it: "Já me tornei.", "tenho me tornado".
+var PT_CLITIC = ["me", "se", "nos", "se"];
+function ptPerfectExamples(base, pi) {
+  var senses = base === "be" ? ["estar"] : (PT_VERB[base] || "").split(/[\/,;]/), inf = null, rest = "", refl = false;
+  for (var i = 0; i < senses.length && !inf; i++) {
+    var w = senses[i].trim().replace("(-se)", "").split(" ");
+    var m = /^([a-zçáéíóúâêôãõ]*(?:ar|er|ir|ôr|or))(-se)?$/.exec(w[0]); // * so that "ir" (go) counts
+    if (m) { inf = m[1]; refl = !!m[2]; rest = w.slice(1).join(" "); }
+  }
+  if (!inf) return null;
+  var F = ptCardForms(inf), p = ptPerson(pi), cl = refl ? PT_CLITIC[p] + " " : "", tail = rest ? " " + rest : "";
+  return { pret: "Já " + cl + F.pret[p] + tail + ".", pres: cl + F.pres[p] + tail + " há um tempo", part: cl + F.part + tail };
+}
 /* ---------- Practice mode: challenge sentences (Portuguese only for now) ---------- */
 // Every practice sentence is hand-written (src/data/pt_free_sentences.json, PR_FREE below).
 // Verbs used in practice, one band per proficiency level (a level uses its band and the ones before it): a sentence's
@@ -4509,7 +4635,7 @@ var PT_BUILD = {
   16: function (F, p) { return PT_HELP.poderia[p] + " " + F.inf; }, 17: function (F, p) { return PT_HELP.poderia[p] + " ter " + F.part; },
   18: function (F, p) { return F.subj[p]; }, 19: function (F, p) { return PT_HELP.tenha[p] + " " + F.part; },
   20: function (F, p) { return PT_HELP.deveria[p] + " " + F.inf; }, 21: function (F, p) { return PT_HELP.deveria[p] + " ter " + F.part; },
-  22: function (F, p) { return PT_HELP.tenho[p] + " que " + F.inf; }, 23: function (F, p) { return PT_HELP.devo[p] + " ter " + F.part; },
+  22: function (F, p) { return PT_HELP.devo[p] + " " + F.inf; }, 23: function (F, p) { return PT_HELP.devo[p] + " ter " + F.part; },
   24: function (F, p) { return PT_HELP.posso[p] + " " + F.inf; }, 25: function (F, p) { return PT_HELP.consigo[p] + " " + F.inf; }
 };
 function ptStructure(idx, inf, pi) {
@@ -5286,7 +5412,7 @@ if (window.MutationObserver && !reduce) [preveal, card].forEach(function (el) {
   }
   function place() {
     tight(false);
-    side(false); compact(0);
+    side(false); compact(0); a.style.order = "";
     if (desk && desk.matches) {
       if (a.parentNode) a.parentNode.removeChild(a);
       var h0 = height();                                     // the header as the game made it
@@ -5300,6 +5426,14 @@ if (window.MutationObserver && !reduce) [preveal, card].forEach(function (el) {
     var at = a.parentNode ? [a.parentNode, a.nextSibling] : null;
     if (a.parentNode) a.parentNode.removeChild(a);
     var base = height();                                     // the header as the game made it
+    // English Idioms (2026-11-26, the user): far left of its bottom row = before its Guide button. That row is
+    // made by CSS `order` (the bottom-row buttons have order 2, a ::after line break order 1), so take its order.
+    var gb = /\/idioms\.html$/.test(location.pathname) && dock.querySelector(":scope > #guidebtn");
+    if (gb) {
+      dock.insertBefore(a, gb); a.style.order = getComputedStyle(gb).order;
+      if (height() <= base + 4) return;
+      a.style.order = "";
+    }
     if (at) at[0].insertBefore(a, at[1]); else dock.appendChild(a);
     if (best() <= base + 4) return;
     tight(true);
@@ -5432,6 +5566,10 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
     lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
   };
+  // Visitor stats (Umami, 2026-11-26, the user): a few named events; nothing personal is sent. umami is
+  // missing offline, in previews (not counted) or when blocked: then nothing happens.
+  var GAME = (location.pathname.match(/\/games\/([^\/]+)\.html$/) || [])[1] || "menu";
+  function stat(name, data) { try { if (window.umami && umami.track) umami.track(name, data); } catch (e) {} }
   function rounds() { return parseInt(A.get("eb-rounds"), 10) || 0; }
   function state() {
     var s = { next: FIRST, line: FIRST, asks: 0, off: false, gave: false };
@@ -5505,6 +5643,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   function copied() {
     el.querySelector(".ebd-done").hidden = false;
     el.querySelector(".ebd-code").hidden = true;
+    stat("PIX code copied", { amount: PIX.codes[pick].label, game: GAME });
     var s = state(); s.gave = true; save(s);       // no more pop-ups; the line in the games comes less often
     ding(659.25); setTimeout(function () { ding(987.77); }, 90);
   }
@@ -5523,6 +5662,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     if (!el) build();
     if (!el.hidden) return;
     mode = how || "manual";
+    stat("Support opened", { from: mode === "ask" ? "menu pop-up" : GAME === "menu" ? "menu link" : "game line", game: GAME });
     back = document.activeElement;
     el.dataset.lang = A.lang();
     el.classList.remove("qr-on");
@@ -5556,7 +5696,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   // ------------------------------------------------------------ the menu: the pop-up and the footer link
   if (inMenu) {
     var link = document.getElementById("donlink");
-    var showLink = function () { if (link) link.hidden = rounds() < FIRST; };
+    var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
     var ask = function () {
       showLink();
@@ -5581,6 +5721,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     lastFp = fp;
     var n = rounds() + 1;
     A.set("eb-rounds", String(n));
+    stat("Round finished", { game: GAME });
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();

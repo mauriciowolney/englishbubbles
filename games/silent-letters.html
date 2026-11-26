@@ -100,15 +100,35 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
       var lv = get.call(L, "eb-level");
       return lv === "B1" || lv === "B2+" ? "en" : "pt";
     }
+    /* The sound-effects volume too (2026-11-26, the user): ONE for the whole app, the menu's "eb-vol" (0-100,
+       0 = sound off). Every game saves "<prefix>-vol" (0-100, its Effects slider) plus an on / off key:
+       "<prefix>-snd" ("0" = off) or "<prefix>-mute" ("1" = off). Reading them gives the menu's volume (menu at 0:
+       the game opens muted, its slider where it was); after a game writes either, eb-vol = 0 if muted, else its
+       slider. The Voice slider ("-vvol") stays each game's own. */
+    var VOL = /^[a-z]+-vol$/, MUTE = /^[a-z]+-(snd|mute)$/;
+    function own(k) { return get.call(L, P + k); }
+    function syncVol(k) {
+      var pre = k.slice(0, k.indexOf("-")), v = parseInt(own(pre + "-vol"), 10);
+      if (isNaN(v) || v < 0 || v > 100) return;
+      var off = own(pre + "-snd") === "0" || own(pre + "-mute") === "1";
+      set.call(L, "eb-vol", String(off ? 0 : v));
+    }
     S.getItem = function (k) {
       if (this === L && BG.test(k)) { var app = get.call(this, "eb-bg"); if (app) return app; }
+      if (this === L && (VOL.test(k) || MUTE.test(k))) {
+        var ev = get.call(this, "eb-vol");
+        if (ev !== null && VOL.test(k) && ev !== "0") return ev;
+        if (ev !== null && MUTE.test(k)) { var off = ev === "0"; return /-snd$/.test(k) ? (off ? "0" : "1") : (off ? "1" : "0"); }
+      }
       if (this === L && LG.hasOwnProperty(k)) return appLang() === "en" ? "en" : LG[k];
       return get.call(this, this === L ? P + k : k);
     };
     S.setItem = function (k, v) {
       if (this === L && BG.test(k)) set.call(this, "eb-bg", v);
       if (this === L && LG.hasOwnProperty(k)) set.call(this, "eb-lang", String(v) === "en" ? "en" : "pt");
-      return set.call(this, this === L ? P + k : k, v);
+      var r = set.call(this, this === L ? P + k : k, v);
+      if (this === L && (VOL.test(k) || MUTE.test(k))) syncVol(k);
+      return r;
     };
     S.removeItem = function (k) { return del.call(this, this === L ? P + k : k); };
     /* The app's own keys (eb-rounds, eb-don…) and language, for the injected donation script (donate.js) */
@@ -128,6 +148,8 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
 </script>
 <meta name="theme-color" content="#e4f3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141964" media="(prefers-color-scheme: dark)">
+<!-- visitor stats (Umami Cloud, no cookies; 2026-11-26, the user): counted only on the real site, not in previews / phone tests -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="daf44de3-d4a0-4383-820b-9763a6abf9b1" data-domains="www.englishbubbles.com.br,englishbubbles.com.br"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="English Bubbles">
@@ -2558,7 +2580,7 @@ applyLang();
   }
   function place() {
     tight(false);
-    side(false); compact(0);
+    side(false); compact(0); a.style.order = "";
     if (desk && desk.matches) {
       if (a.parentNode) a.parentNode.removeChild(a);
       var h0 = height();                                     // the header as the game made it
@@ -2572,6 +2594,14 @@ applyLang();
     var at = a.parentNode ? [a.parentNode, a.nextSibling] : null;
     if (a.parentNode) a.parentNode.removeChild(a);
     var base = height();                                     // the header as the game made it
+    // English Idioms (2026-11-26, the user): far left of its bottom row = before its Guide button. That row is
+    // made by CSS `order` (the bottom-row buttons have order 2, a ::after line break order 1), so take its order.
+    var gb = /\/idioms\.html$/.test(location.pathname) && dock.querySelector(":scope > #guidebtn");
+    if (gb) {
+      dock.insertBefore(a, gb); a.style.order = getComputedStyle(gb).order;
+      if (height() <= base + 4) return;
+      a.style.order = "";
+    }
     if (at) at[0].insertBefore(a, at[1]); else dock.appendChild(a);
     if (best() <= base + 4) return;
     tight(true);
@@ -2704,6 +2734,10 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
     lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
   };
+  // Visitor stats (Umami, 2026-11-26, the user): a few named events; nothing personal is sent. umami is
+  // missing offline, in previews (not counted) or when blocked: then nothing happens.
+  var GAME = (location.pathname.match(/\/games\/([^\/]+)\.html$/) || [])[1] || "menu";
+  function stat(name, data) { try { if (window.umami && umami.track) umami.track(name, data); } catch (e) {} }
   function rounds() { return parseInt(A.get("eb-rounds"), 10) || 0; }
   function state() {
     var s = { next: FIRST, line: FIRST, asks: 0, off: false, gave: false };
@@ -2777,6 +2811,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   function copied() {
     el.querySelector(".ebd-done").hidden = false;
     el.querySelector(".ebd-code").hidden = true;
+    stat("PIX code copied", { amount: PIX.codes[pick].label, game: GAME });
     var s = state(); s.gave = true; save(s);       // no more pop-ups; the line in the games comes less often
     ding(659.25); setTimeout(function () { ding(987.77); }, 90);
   }
@@ -2795,6 +2830,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     if (!el) build();
     if (!el.hidden) return;
     mode = how || "manual";
+    stat("Support opened", { from: mode === "ask" ? "menu pop-up" : GAME === "menu" ? "menu link" : "game line", game: GAME });
     back = document.activeElement;
     el.dataset.lang = A.lang();
     el.classList.remove("qr-on");
@@ -2828,7 +2864,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   // ------------------------------------------------------------ the menu: the pop-up and the footer link
   if (inMenu) {
     var link = document.getElementById("donlink");
-    var showLink = function () { if (link) link.hidden = rounds() < FIRST; };
+    var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
     var ask = function () {
       showLink();
@@ -2853,6 +2889,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     lastFp = fp;
     var n = rounds() + 1;
     A.set("eb-rounds", String(n));
+    stat("Round finished", { game: GAME });
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();
