@@ -4396,6 +4396,13 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   text-decoration-color: var(--underline, #e0558a); -webkit-appearance: none; appearance: none; }
 .ebd-line button svg { width: 14px; height: 14px; color: var(--underline, #e0558a); }
 .ebd-line button:focus-visible { outline: 2px solid var(--underline, #e0558a); outline-offset: 2px; border-radius: 6px; }
+/* "Found a mistake? Tell us" at the very bottom of a round's end (report(), 2026-11-27): quieter than the lines above */
+.ebd-report { margin: .45rem auto 0 !important; text-align: center; font: 400 .8rem/1.35 "Fredoka", ui-rounded, system-ui, sans-serif; color: var(--ink, #26385c); opacity: .7; }
+.ebd-report button { display: inline-flex; align-items: center; gap: .25em; margin: 0; padding: 2px 4px; border: 0; background: none; cursor: pointer;
+  font: 500 .8rem/1.35 "Fredoka", ui-rounded, system-ui, sans-serif; color: inherit; text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--dock-line, rgba(120,140,200,.5)); -webkit-appearance: none; appearance: none; }
+.ebd-report button:focus-visible { outline: 2px solid var(--underline, #e0558a); outline-offset: 2px; border-radius: 6px; }
+@media (hover: hover) and (pointer: fine) { .ebd-report:hover { opacity: .95; } }
 /* the share line's icon (the line itself is .ebd-line) and the "Copied!" note after sharing on a computer */
 .ebd-share button svg { color: var(--underline, #e0558a); }
 .ebd-note { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 2147483000;
@@ -4617,8 +4624,46 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   }
   window.ebShare = share;
 
-  // ------------------------------------------------------------ the menu: the pop-up and the footer link
+  // ------------------------------------------------------------ reporting a mistake (2026-11-27, the user)
+  // The user's Google Form "English Bubbles – Avisar um erro" (questions: what happened, Game, Automatic details,
+  // email if a reply is wanted; no sign-in, emails not collected; answers go to a linked Google Sheet). The app opens
+  // it with Game and Automatic details already filled in: the game's menu title and id, where it was opened from,
+  // language, light mode, screen size and browser, and the round just played (the game's own "Copy results" text,
+  // resultsText(), in 13 games; else the end card's visible text). The student writes only what happened.
+  var FORM = "https://docs.google.com/forms/d/e/1FAIpQLSeshi1w10fuw1g2RCJm3pwu9Fkp7DrTgl4TrWv_OtUX3oU7Wg/viewform?usp=pp_url",
+    F_GAME = "entry.1472550832", F_DET = "entry.1131403084";
+  var FLAG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4.5L17 13H5"/></svg>';
+  function report(from, card) {
+    var title = (window.ebApp && window.ebApp.title) || (GAME === "menu" ? "Menu" : GAME), round = "";
+    try { if (typeof window.resultsText === "function") round = String(window.resultsText() || ""); } catch (e) {}
+    if (!round && card) {
+      // the end card's visible text, without its buttons' labels and the app's own lines
+      var skip = { "×": 1, "✕": 1 };
+      [].forEach.call(card.querySelectorAll("button, .ebd-line, .ebd-report"), function (b) {
+        (b.innerText || "").split("\n").forEach(function (x) { skip[x.trim()] = 1; });
+      });
+      round = (card.innerText || "").split("\n").map(function (x) { return x.replace(/\s+/g, " ").trim(); })
+        .filter(function (x) { return x && !skip[x]; }).join("\n");
+    }
+    var det = [
+      (GAME === "menu" ? "Menu" : "games/" + GAME + ".html") + " · " + from,
+      "Idioma " + A.lang() + " · modo leve " + (document.documentElement.classList.contains("eb-lite") ? "sim" : "não"),
+      "Tela " + window.innerWidth + "×" + window.innerHeight + " · " + navigator.userAgent
+    ];
+    if (round) det.push("", "Rodada:", round);
+    det = det.join("\n");
+    if (det.length > 1500) det = det.slice(0, 1500) + "…";     // the address must stay short enough for every browser
+    var url = FORM + "&" + F_GAME + "=" + encodeURIComponent(GAME === "menu" ? "Menu" : title + " (" + GAME + ")") +
+      "&" + F_DET + "=" + encodeURIComponent(det);
+    stat("Report opened", { from: from, game: GAME });
+    window.open(url, "_blank", "noopener");
+  }
+  window.ebReport = report;
+
+  // ------------------------------------------------------------ the menu: the pop-up and the footer links
   if (inMenu) {
+    var rl = document.getElementById("reportlink");
+    if (rl) rl.addEventListener("click", function () { report("menu link", null); });
     var link = document.getElementById("donlink");
     var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
@@ -4669,6 +4714,25 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     var n = rounds() + 1;
     A.set("eb-rounds", String(n));
     stat("Round finished", { game: GAME });
+    promo(after, n);
+    reportLine(after);
+  }
+  // At the very bottom of every round's end: "Found a mistake? Tell us" (always; under the share / support line)
+  function reportLine(after) {
+    var box = after.parentNode, old = box.querySelector(".ebd-report");
+    if (old) old.remove();
+    var line = box.querySelector(".ebd-line"), card = after.closest("#endmodal, .pend") || box;
+    var p = document.createElement("p");
+    p.className = "ebd-report ebd-l";
+    p.dataset.lang = A.lang();
+    p.innerHTML = both("Found a mistake?", "Encontrou um erro?") +
+      ' <button type="button">' + FLAG + both("Tell us", "Avise") + "</button>";
+    p.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); report("game end", card); });
+    var at = line || after;
+    box.insertBefore(p, at.nextSibling);
+  }
+  // the support line (from round 5) or else, now and then, the share line
+  function promo(after, n) {
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();
