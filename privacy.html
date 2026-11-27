@@ -48,6 +48,11 @@
       root.dataset.theme = c[3] ? "dark" : "light";
     }
   } catch (e) {}
+  // Light mode (eb-lite "auto" or "on", src/inject/lite.js): on before the first paint, so no background bubbles flash.
+  try {
+    var lite = Storage.prototype.getItem.call(window.localStorage, "eb-lite");
+    if (lite === "auto" || lite === "on") document.documentElement.classList.add("eb-lite");
+  } catch (e) {}
   // The phone's bars (theme-color) follow the background: its top colour --bg-a, set here or later by the page's own
   // colour picker (menu or game: both write --bg-a on <html>). No colour chosen: the default light / dark ones.
   try {
@@ -295,10 +300,10 @@ html::-webkit-scrollbar { display: none; }
       <p class="pp-sum"><b>Em resumo:</b> o English Bubbles é gratuito, não tem cadastro nem anúncios e não pede o seu nome, e-mail ou qualquer dado pessoal. O seu progresso fica salvo só no seu aparelho.</p>
 
       <h2>O que fica salvo no seu aparelho</h2>
-      <p>Para lembrar o seu progresso, o app guarda no próprio navegador (armazenamento local, não são cookies): pontuações, recordes, favoritos, o nível escolhido, o idioma, a cor de fundo, o volume e quais jogos você já abriu. Esses dados <b>não são enviados para ninguém</b>, nem para nós. Para apagá-los, limpe os dados do site no navegador ou desinstale o app.</p>
+      <p>Para lembrar o seu progresso, o app guarda no próprio navegador (armazenamento local, não são cookies): pontuações, recordes, favoritos, o nível escolhido, o idioma, a cor de fundo, o volume, o modo leve e quais jogos você já abriu. Esses dados <b>não são enviados para ninguém</b>, nem para nós. Para apagá-los, limpe os dados do site no navegador ou desinstale o app.</p>
 
       <h2>Contagem de visitas</h2>
-      <p>Usamos o <a href="https://umami.is/privacy" rel="noopener">Umami</a> para saber, de forma anônima, quantas pessoas usam o site: quais páginas são abertas, o tipo de aparelho e navegador, o idioma, o país e de qual site a pessoa veio, além de alguns eventos (uma rodada terminada, o painel de apoio aberto, um código PIX copiado, com o valor). O Umami <b>não usa cookies</b>, não guarda o seu endereço IP e não permite identificar ninguém.</p>
+      <p>Usamos o <a href="https://umami.is/privacy" rel="noopener">Umami</a> para saber, de forma anônima, quantas pessoas usam o site: quais páginas são abertas, o tipo de aparelho e navegador, o idioma, o país e de qual site a pessoa veio, além de alguns eventos (uma rodada terminada, o painel de apoio aberto, um código PIX copiado, com o valor, o app compartilhado, o modo leve ligado ou desligado). O Umami <b>não usa cookies</b>, não guarda o seu endereço IP e não permite identificar ninguém.</p>
 
       <h2>Serviços que o site usa</h2>
       <p>Como em qualquer site, estes serviços recebem o endereço IP de quem visita, só para entregar o conteúdo:</p>
@@ -331,10 +336,10 @@ html::-webkit-scrollbar { display: none; }
       <p class="pp-sum"><b>In short:</b> English Bubbles is free, has no sign-up and no ads, and never asks for your name, email or any personal data. Your progress is saved only on your own device.</p>
 
       <h2>What is saved on your device</h2>
-      <p>To remember your progress, the app keeps in your own browser (local storage, not cookies): scores, records, favourites, the level you chose, the language, the background colour, the volume and which games you have opened. This data is <b>never sent to anyone</b>, us included. To erase it, clear the site's data in your browser or uninstall the app.</p>
+      <p>To remember your progress, the app keeps in your own browser (local storage, not cookies): scores, records, favourites, the level you chose, the language, the background colour, the volume, light mode and which games you have opened. This data is <b>never sent to anyone</b>, us included. To erase it, clear the site's data in your browser or uninstall the app.</p>
 
       <h2>Visitor counting</h2>
-      <p>We use <a href="https://umami.is/privacy" rel="noopener">Umami</a> to know, anonymously, how many people use the site: which pages are opened, the kind of device and browser, the language, the country and which site the visitor came from, plus a few events (a round finished, the support panel opened, a PIX code copied, with its amount). Umami uses <b>no cookies</b>, does not keep your IP address and cannot identify anyone.</p>
+      <p>We use <a href="https://umami.is/privacy" rel="noopener">Umami</a> to know, anonymously, how many people use the site: which pages are opened, the kind of device and browser, the language, the country and which site the visitor came from, plus a few events (a round finished, the support panel opened, a PIX code copied, with its amount, the app shared, light mode turned on or off). Umami uses <b>no cookies</b>, does not keep your IP address and cannot identify anyone.</p>
 
       <h2>Services the site uses</h2>
       <p>As with any website, these services receive the visitor's IP address, only to deliver the content:</p>

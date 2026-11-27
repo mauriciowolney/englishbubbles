@@ -45,6 +45,11 @@
       root.dataset.theme = c[3] ? "dark" : "light";
     }
   } catch (e) {}
+  // Light mode (eb-lite "auto" or "on", src/inject/lite.js): on before the first paint, so no background bubbles flash.
+  try {
+    var lite = Storage.prototype.getItem.call(window.localStorage, "eb-lite");
+    if (lite === "auto" || lite === "on") document.documentElement.classList.add("eb-lite");
+  } catch (e) {}
   // The phone's bars (theme-color) follow the background: its top colour --bg-a, set here or later by the page's own
   // colour picker (menu or game: both write --bg-a on <html>). No colour chosen: the default light / dark ones.
   try {
@@ -143,7 +148,7 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
     };
     S.removeItem = function (k) { return del.call(this, this === L ? P + k : k); };
     /* The app's own keys (eb-rounds, eb-don…) and language, for the injected donation script (donate.js) */
-    window.ebApp = { get: function (k) { return get.call(L, k); }, set: function (k, v) { set.call(L, k, v); }, lang: appLang };
+    window.ebApp = { get: function (k) { return get.call(L, k); }, set: function (k, v) { set.call(L, k, v); }, lang: appLang, title: "Silent Letters" };
     /* Opened from the menu (a card or Continue)? Then the game starts at the menu's level ("My level"): the menu
        leaves a one-time note (sessionStorage eb-level-go), and the matching level is saved under the game's own
        level key before the game reads it (games.json "level"; the nearest level when the game doesn't have it).
@@ -168,6 +173,29 @@ html.eb-leaving body { opacity: 0; transition: opacity .22s ease-in; pointer-eve
 <link rel="icon" href="../icons/favicon-32.png?v=a551d7bb" sizes="32x32" type="image/png">
 <link rel="icon" href="../icons/favicon-64.png?v=a551d7bb" sizes="64x64" type="image/png">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png?v=a551d7bb">
+<style>
+/* lite.css — LIGHT MODE (2026-11-27, the user: for devices that struggle with the animations). In the menu (with its
+   CSS, in <head>) and in every game (injected in <head>), so it applies before the first paint. html.eb-lite is set
+   by early-theme.js from the saved choice and by lite.js (the automatic check, the switch in Help). What it does:
+   no background bubbles, no frosted-glass blur (the costliest effect on cheap phones); lite.js pauses every endlessly
+   repeating animation (floating, the turning film). One-off animations (feedback, windows) and sounds stay. */
+html.eb-lite .sky { display: none !important; }
+html.eb-lite *, html.eb-lite *::before, html.eb-lite *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* (the menu's own light-mode rules, for its cards and hero bubbles, are in src/css/30-cards.css) */
+
+/* the note shown once when light mode turns itself on */
+.ebl-note { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 2147483000;
+  box-sizing: border-box; width: max-content; max-width: min(420px, calc(100% - 32px)); padding: .8em 1.1em; border-radius: 18px;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none; text-align: center;
+  font: 500 .92rem/1.4 "Fredoka", ui-rounded, system-ui, sans-serif; color: var(--ink, #26385c);
+  background: var(--modal-bg, rgba(255,255,255,.96)); border: 1px solid var(--dock-line, rgba(120,140,200,.25));
+  box-shadow: 0 10px 26px rgba(0,0,0,.22); transition: opacity .25s ease, transform .3s cubic-bezier(.2,.9,.3,1.15); }
+.ebl-note.on { opacity: 1; transform: translate(-50%, 0); }
+.ebl-note b { font-weight: 600; }
+.ebl-note .ebl-pt { display: none; }
+.ebl-note[data-lang="pt"] .ebl-pt { display: inline; }
+.ebl-note[data-lang="pt"] .ebl-en { display: none; }
+</style>
 
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2717,6 +2745,15 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   text-decoration-color: var(--underline, #e0558a); -webkit-appearance: none; appearance: none; }
 .ebd-line button svg { width: 14px; height: 14px; color: var(--underline, #e0558a); }
 .ebd-line button:focus-visible { outline: 2px solid var(--underline, #e0558a); outline-offset: 2px; border-radius: 6px; }
+/* the share line's icon (the line itself is .ebd-line) and the "Copied!" note after sharing on a computer */
+.ebd-share button svg { color: var(--underline, #e0558a); }
+.ebd-note { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 2147483000;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none; max-width: calc(100% - 32px); padding: .7em 1.2em;
+  border-radius: 999px; text-align: center; font: 500 .95rem/1.35 "Fredoka", ui-rounded, system-ui, sans-serif;
+  color: var(--ink, #26385c); background: var(--dock-bg, rgba(255,255,255,.62)); border: 1px solid var(--dock-line, rgba(120,140,200,.25));
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); box-shadow: 0 10px 26px rgba(0,0,0,.22);
+  transition: opacity .25s ease, transform .3s cubic-bezier(.2,.9,.3,1.15); }
+.ebd-note.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { .ebd, .ebd-card { animation: none; } }
 </style>
 <script>
@@ -2732,7 +2769,12 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
      later, three times at most; "Don't show this again" or copying a code ends the pop-ups. The footer's
      "♥ Support" link stays from the 5th round on.
    State: eb-don = {next: round of the next pop-up, asks, off, gave, line: round of the next line}. Nothing leaves
-   the device; a fixed PIX code can't tell whether anyone paid, so the app only says thank you. */
+   the device; a fixed PIX code can't tell whether anyone paid, so the app only says thank you.
+   SHARING (2026-11-27, the user): share() = the phone's own share menu (touch screens with navigator.share), else the
+   message + link copied and a small "Copied!" note. The menu shares the site (the "Share" chip beside Continue,
+   #sharebtn); a game shares its own page with its menu title (ebApp.title). In the games, a quiet line "Like it?
+   Share it with a friend" under the round's buttons from round 3, then every 4th round (every 12th once the student
+   has shared), never on the same round as the support line. State: eb-share = {next, shared}. */
 (function () {
   "use strict";
   var PIX = {"receiver":"Mauricio Wolney","codes":[{"label":"R$ 5","code":"00020101021126950014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf390233doacao de 5 reais English bubbles52040000530398654045.005802BR5917MAURICIO B WOLNEY6008SALVADOR62070503***63040A6D","n":49,"qr":"M4 4h7v1h-7zM13 4h3v1h-3zM17 4h3v1h-3zM21 4h1v1h-1zM25 4h1v1h-1zM29 4h1v1h-1zM31 4h1v1h-1zM34 4h2v1h-2zM37 4h1v1h-1zM40 4h2v1h-2zM44 4h1v1h-1zM46 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM14 5h4v1h-4zM19 5h1v1h-1zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM28 5h1v1h-1zM31 5h1v1h-1zM33 5h1v1h-1zM35 5h1v1h-1zM38 5h1v1h-1zM40 5h1v1h-1zM42 5h3v1h-3zM46 5h1v1h-1zM52 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM14 6h1v1h-1zM18 6h2v1h-2zM27 6h1v1h-1zM29 6h4v1h-4zM34 6h5v1h-5zM43 6h2v1h-2zM46 6h1v1h-1zM48 6h3v1h-3zM52 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h4v1h-4zM20 7h1v1h-1zM22 7h2v1h-2zM25 7h2v1h-2zM28 7h2v1h-2zM31 7h1v1h-1zM33 7h1v1h-1zM39 7h3v1h-3zM43 7h1v1h-1zM46 7h1v1h-1zM48 7h3v1h-3zM52 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM16 8h4v1h-4zM21 8h1v1h-1zM23 8h1v1h-1zM25 8h6v1h-6zM32 8h1v1h-1zM34 8h1v1h-1zM40 8h2v1h-2zM46 8h1v1h-1zM48 8h3v1h-3zM52 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h1v1h-1zM15 9h3v1h-3zM19 9h2v1h-2zM22 9h5v1h-5zM30 9h2v1h-2zM33 9h1v1h-1zM38 9h1v1h-1zM40 9h3v1h-3zM46 9h1v1h-1zM52 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h1v1h-1zM44 10h1v1h-1zM46 10h7v1h-7zM16 11h2v1h-2zM19 11h3v1h-3zM23 11h2v1h-2zM26 11h1v1h-1zM30 11h3v1h-3zM35 11h2v1h-2zM39 11h1v1h-1zM43 11h1v1h-1zM4 12h5v1h-5zM10 12h3v1h-3zM19 12h2v1h-2zM22 12h3v1h-3zM26 12h6v1h-6zM33 12h2v1h-2zM37 12h1v1h-1zM40 12h1v1h-1zM44 12h2v1h-2zM47 12h1v1h-1zM49 12h1v1h-1zM51 12h1v1h-1zM6 13h1v1h-1zM11 13h1v1h-1zM15 13h1v1h-1zM18 13h2v1h-2zM21 13h1v1h-1zM25 13h1v1h-1zM27 13h2v1h-2zM32 13h1v1h-1zM34 13h1v1h-1zM36 13h2v1h-2zM40 13h1v1h-1zM43 13h1v1h-1zM45 13h2v1h-2zM49 13h1v1h-1zM4 14h1v1h-1zM8 14h1v1h-1zM10 14h5v1h-5zM16 14h1v1h-1zM21 14h2v1h-2zM25 14h1v1h-1zM29 14h2v1h-2zM32 14h2v1h-2zM38 14h6v1h-6zM47 14h6v1h-6zM4 15h1v1h-1zM6 15h1v1h-1zM8 15h1v1h-1zM12 15h1v1h-1zM17 15h2v1h-2zM25 15h1v1h-1zM27 15h1v1h-1zM32 15h8v1h-8zM43 15h1v1h-1zM46 15h4v1h-4zM52 15h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM8 16h1v1h-1zM10 16h1v1h-1zM12 16h2v1h-2zM15 16h2v1h-2zM19 16h2v1h-2zM22 16h1v1h-1zM26 16h1v1h-1zM28 16h1v1h-1zM30 16h2v1h-2zM37 16h1v1h-1zM39 16h2v1h-2zM42 16h3v1h-3zM50 16h2v1h-2zM6 17h1v1h-1zM8 17h1v1h-1zM13 17h3v1h-3zM17 17h3v1h-3zM21 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM28 17h1v1h-1zM34 17h2v1h-2zM37 17h1v1h-1zM46 17h2v1h-2zM49 17h3v1h-3zM4 18h1v1h-1zM7 18h7v1h-7zM15 18h1v1h-1zM19 18h2v1h-2zM22 18h1v1h-1zM25 18h1v1h-1zM30 18h2v1h-2zM36 18h1v1h-1zM38 18h2v1h-2zM42 18h2v1h-2zM45 18h1v1h-1zM52 18h1v1h-1zM5 19h2v1h-2zM9 19h1v1h-1zM14 19h1v1h-1zM19 19h3v1h-3zM23 19h1v1h-1zM25 19h1v1h-1zM27 19h2v1h-2zM30 19h2v1h-2zM34 19h2v1h-2zM39 19h1v1h-1zM45 19h2v1h-2zM48 19h1v1h-1zM52 19h1v1h-1zM7 20h4v1h-4zM13 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM19 20h6v1h-6zM26 20h4v1h-4zM33 20h3v1h-3zM40 20h1v1h-1zM44 20h4v1h-4zM50 20h1v1h-1zM52 20h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM9 21h1v1h-1zM11 21h1v1h-1zM13 21h2v1h-2zM16 21h3v1h-3zM25 21h5v1h-5zM34 21h1v1h-1zM36 21h2v1h-2zM39 21h2v1h-2zM43 21h1v1h-1zM45 21h2v1h-2zM48 21h2v1h-2zM6 22h1v1h-1zM10 22h1v1h-1zM12 22h2v1h-2zM15 22h1v1h-1zM19 22h1v1h-1zM22 22h2v1h-2zM25 22h1v1h-1zM27 22h2v1h-2zM30 22h4v1h-4zM37 22h7v1h-7zM45 22h1v1h-1zM49 22h1v1h-1zM51 22h2v1h-2zM6 23h1v1h-1zM11 23h2v1h-2zM15 23h2v1h-2zM24 23h1v1h-1zM27 23h1v1h-1zM31 23h3v1h-3zM35 23h3v1h-3zM41 23h3v1h-3zM45 23h5v1h-5zM51 23h1v1h-1zM4 24h3v1h-3zM9 24h2v1h-2zM12 24h5v1h-5zM19 24h2v1h-2zM22 24h1v1h-1zM25 24h2v1h-2zM28 24h1v1h-1zM33 24h2v1h-2zM37 24h1v1h-1zM40 24h1v1h-1zM42 24h1v1h-1zM44 24h1v1h-1zM50 24h3v1h-3zM4 25h1v1h-1zM6 25h3v1h-3zM11 25h1v1h-1zM14 25h6v1h-6zM21 25h1v1h-1zM23 25h1v1h-1zM25 25h1v1h-1zM28 25h2v1h-2zM31 25h5v1h-5zM37 25h1v1h-1zM41 25h1v1h-1zM43 25h1v1h-1zM46 25h2v1h-2zM49 25h1v1h-1zM51 25h1v1h-1zM5 26h12v1h-12zM19 26h5v1h-5zM25 26h6v1h-6zM38 26h1v1h-1zM40 26h1v1h-1zM42 26h1v1h-1zM44 26h5v1h-5zM50 26h1v1h-1zM52 26h1v1h-1zM5 27h1v1h-1zM8 27h1v1h-1zM12 27h1v1h-1zM14 27h2v1h-2zM18 27h3v1h-3zM22 27h1v1h-1zM25 27h2v1h-2zM30 27h2v1h-2zM33 27h2v1h-2zM38 27h2v1h-2zM41 27h1v1h-1zM43 27h2v1h-2zM48 27h1v1h-1zM52 27h1v1h-1zM7 28h2v1h-2zM10 28h1v1h-1zM12 28h1v1h-1zM15 28h3v1h-3zM19 28h8v1h-8zM28 28h1v1h-1zM30 28h1v1h-1zM33 28h1v1h-1zM35 28h1v1h-1zM37 28h2v1h-2zM40 28h2v1h-2zM43 28h2v1h-2zM46 28h1v1h-1zM48 28h3v1h-3zM52 28h1v1h-1zM5 29h2v1h-2zM8 29h1v1h-1zM12 29h1v1h-1zM16 29h1v1h-1zM18 29h1v1h-1zM25 29h2v1h-2zM30 29h1v1h-1zM32 29h3v1h-3zM36 29h2v1h-2zM43 29h2v1h-2zM48 29h2v1h-2zM4 30h1v1h-1zM6 30h1v1h-1zM8 30h5v1h-5zM14 30h1v1h-1zM16 30h2v1h-2zM19 30h1v1h-1zM22 30h3v1h-3zM26 30h6v1h-6zM34 30h1v1h-1zM38 30h5v1h-5zM44 30h5v1h-5zM51 30h2v1h-2zM4 31h2v1h-2zM7 31h1v1h-1zM9 31h1v1h-1zM11 31h2v1h-2zM14 31h3v1h-3zM19 31h1v1h-1zM22 31h1v1h-1zM25 31h2v1h-2zM29 31h1v1h-1zM32 31h1v1h-1zM34 31h1v1h-1zM36 31h2v1h-2zM41 31h1v1h-1zM45 31h1v1h-1zM49 31h1v1h-1zM4 32h3v1h-3zM8 32h6v1h-6zM16 32h1v1h-1zM19 32h2v1h-2zM22 32h1v1h-1zM28 32h2v1h-2zM31 32h1v1h-1zM35 32h1v1h-1zM39 32h5v1h-5zM46 32h1v1h-1zM48 32h1v1h-1zM50 32h2v1h-2zM5 33h2v1h-2zM9 33h1v1h-1zM11 33h1v1h-1zM14 33h6v1h-6zM21 33h1v1h-1zM23 33h1v1h-1zM25 33h1v1h-1zM27 33h3v1h-3zM31 33h1v1h-1zM34 33h2v1h-2zM37 33h1v1h-1zM39 33h1v1h-1zM41 33h1v1h-1zM43 33h3v1h-3zM47 33h1v1h-1zM49 33h3v1h-3zM10 34h4v1h-4zM15 34h1v1h-1zM17 34h1v1h-1zM20 34h2v1h-2zM24 34h1v1h-1zM26 34h1v1h-1zM29 34h1v1h-1zM33 34h1v1h-1zM38 34h1v1h-1zM40 34h1v1h-1zM42 34h3v1h-3zM46 34h1v1h-1zM48 34h2v1h-2zM52 34h1v1h-1zM7 35h1v1h-1zM9 35h1v1h-1zM13 35h2v1h-2zM17 35h1v1h-1zM19 35h1v1h-1zM21 35h1v1h-1zM23 35h1v1h-1zM27 35h1v1h-1zM30 35h2v1h-2zM33 35h1v1h-1zM35 35h3v1h-3zM39 35h1v1h-1zM45 35h1v1h-1zM49 35h1v1h-1zM52 35h1v1h-1zM6 36h1v1h-1zM10 36h3v1h-3zM14 36h2v1h-2zM17 36h1v1h-1zM19 36h7v1h-7zM27 36h1v1h-1zM29 36h1v1h-1zM33 36h2v1h-2zM37 36h1v1h-1zM40 36h4v1h-4zM47 36h4v1h-4zM52 36h1v1h-1zM5 37h2v1h-2zM12 37h5v1h-5zM18 37h2v1h-2zM25 37h1v1h-1zM28 37h3v1h-3zM33 37h2v1h-2zM37 37h1v1h-1zM40 37h1v1h-1zM43 37h1v1h-1zM45 37h2v1h-2zM49 37h1v1h-1zM5 38h4v1h-4zM10 38h4v1h-4zM20 38h3v1h-3zM24 38h6v1h-6zM31 38h2v1h-2zM34 38h1v1h-1zM38 38h1v1h-1zM41 38h4v1h-4zM46 38h1v1h-1zM48 38h2v1h-2zM51 38h2v1h-2zM5 39h2v1h-2zM11 39h1v1h-1zM14 39h3v1h-3zM20 39h2v1h-2zM23 39h1v1h-1zM25 39h3v1h-3zM32 39h3v1h-3zM36 39h2v1h-2zM41 39h2v1h-2zM45 39h1v1h-1zM49 39h1v1h-1zM51 39h2v1h-2zM4 40h3v1h-3zM9 40h2v1h-2zM13 40h1v1h-1zM16 40h2v1h-2zM20 40h1v1h-1zM22 40h2v1h-2zM28 40h2v1h-2zM31 40h1v1h-1zM33 40h3v1h-3zM38 40h6v1h-6zM45 40h2v1h-2zM48 40h1v1h-1zM50 40h3v1h-3zM4 41h1v1h-1zM7 41h2v1h-2zM11 41h1v1h-1zM13 41h1v1h-1zM16 41h1v1h-1zM19 41h1v1h-1zM21 41h1v1h-1zM23 41h1v1h-1zM25 41h5v1h-5zM33 41h2v1h-2zM36 41h2v1h-2zM41 41h1v1h-1zM43 41h1v1h-1zM45 41h3v1h-3zM49 41h1v1h-1zM51 41h1v1h-1zM5 42h1v1h-1zM9 42h3v1h-3zM13 42h1v1h-1zM16 42h1v1h-1zM19 42h1v1h-1zM22 42h1v1h-1zM26 42h1v1h-1zM28 42h1v1h-1zM32 42h1v1h-1zM35 42h1v1h-1zM38 42h1v1h-1zM40 42h5v1h-5zM46 42h2v1h-2zM49 42h1v1h-1zM52 42h1v1h-1zM5 43h3v1h-3zM13 43h1v1h-1zM15 43h3v1h-3zM19 43h1v1h-1zM21 43h5v1h-5zM27 43h1v1h-1zM29 43h3v1h-3zM34 43h4v1h-4zM39 43h1v1h-1zM45 43h1v1h-1zM47 43h1v1h-1zM52 43h1v1h-1zM4 44h3v1h-3zM10 44h4v1h-4zM17 44h1v1h-1zM19 44h4v1h-4zM24 44h7v1h-7zM33 44h2v1h-2zM37 44h1v1h-1zM40 44h1v1h-1zM43 44h8v1h-8zM52 44h1v1h-1zM12 45h1v1h-1zM14 45h1v1h-1zM16 45h1v1h-1zM18 45h1v1h-1zM23 45h1v1h-1zM26 45h1v1h-1zM30 45h5v1h-5zM37 45h1v1h-1zM39 45h2v1h-2zM43 45h2v1h-2zM48 45h2v1h-2zM52 45h1v1h-1zM4 46h7v1h-7zM12 46h1v1h-1zM15 46h1v1h-1zM22 46h1v1h-1zM26 46h1v1h-1zM28 46h1v1h-1zM30 46h2v1h-2zM33 46h2v1h-2zM36 46h1v1h-1zM38 46h1v1h-1zM41 46h4v1h-4zM46 46h1v1h-1zM48 46h1v1h-1zM51 46h2v1h-2zM4 47h1v1h-1zM10 47h1v1h-1zM14 47h1v1h-1zM16 47h2v1h-2zM19 47h1v1h-1zM22 47h2v1h-2zM25 47h2v1h-2zM30 47h3v1h-3zM34 47h3v1h-3zM41 47h1v1h-1zM43 47h2v1h-2zM48 47h2v1h-2zM52 47h1v1h-1zM4 48h1v1h-1zM6 48h3v1h-3zM10 48h1v1h-1zM12 48h1v1h-1zM14 48h1v1h-1zM16 48h1v1h-1zM20 48h1v1h-1zM22 48h1v1h-1zM26 48h6v1h-6zM33 48h1v1h-1zM37 48h4v1h-4zM42 48h7v1h-7zM50 48h1v1h-1zM52 48h1v1h-1zM4 49h1v1h-1zM6 49h3v1h-3zM10 49h1v1h-1zM12 49h1v1h-1zM15 49h5v1h-5zM21 49h1v1h-1zM23 49h1v1h-1zM25 49h1v1h-1zM29 49h2v1h-2zM32 49h6v1h-6zM44 49h6v1h-6zM52 49h1v1h-1zM4 50h1v1h-1zM6 50h3v1h-3zM10 50h1v1h-1zM12 50h1v1h-1zM14 50h1v1h-1zM18 50h1v1h-1zM22 50h2v1h-2zM25 50h1v1h-1zM28 50h4v1h-4zM38 50h2v1h-2zM42 50h2v1h-2zM45 50h2v1h-2zM49 50h3v1h-3zM4 51h1v1h-1zM10 51h1v1h-1zM12 51h1v1h-1zM15 51h3v1h-3zM21 51h1v1h-1zM26 51h1v1h-1zM28 51h2v1h-2zM33 51h4v1h-4zM39 51h1v1h-1zM43 51h2v1h-2zM46 51h1v1h-1zM52 51h1v1h-1zM4 52h7v1h-7zM12 52h1v1h-1zM15 52h1v1h-1zM17 52h1v1h-1zM19 52h4v1h-4zM24 52h1v1h-1zM27 52h2v1h-2zM33 52h2v1h-2zM40 52h4v1h-4zM45 52h1v1h-1zM50 52h3v1h-3z"},{"label":"R$ 10","code":"00020101021126930014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf390231doacao 10 reais English Bubbles520400005303986540510.005802BR5917MAURICIO B WOLNEY6008SALVADOR62070503***6304FA56","n":49,"qr":"M4 4h7v1h-7zM13 4h3v1h-3zM17 4h2v1h-2zM21 4h1v1h-1zM25 4h1v1h-1zM31 4h2v1h-2zM34 4h2v1h-2zM37 4h1v1h-1zM39 4h3v1h-3zM44 4h1v1h-1zM46 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM14 5h1v1h-1zM16 5h1v1h-1zM19 5h1v1h-1zM21 5h2v1h-2zM24 5h1v1h-1zM26 5h1v1h-1zM28 5h1v1h-1zM30 5h2v1h-2zM33 5h1v1h-1zM36 5h1v1h-1zM38 5h1v1h-1zM40 5h1v1h-1zM42 5h3v1h-3zM46 5h1v1h-1zM52 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM17 6h3v1h-3zM25 6h1v1h-1zM27 6h1v1h-1zM29 6h4v1h-4zM34 6h5v1h-5zM43 6h2v1h-2zM46 6h1v1h-1zM48 6h3v1h-3zM52 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h4v1h-4zM20 7h1v1h-1zM22 7h4v1h-4zM28 7h2v1h-2zM31 7h1v1h-1zM33 7h1v1h-1zM39 7h3v1h-3zM43 7h1v1h-1zM46 7h1v1h-1zM48 7h3v1h-3zM52 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM13 8h1v1h-1zM15 8h1v1h-1zM17 8h3v1h-3zM21 8h1v1h-1zM25 8h6v1h-6zM32 8h1v1h-1zM34 8h1v1h-1zM40 8h2v1h-2zM46 8h1v1h-1zM48 8h3v1h-3zM52 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h5v1h-5zM19 9h2v1h-2zM22 9h1v1h-1zM24 9h3v1h-3zM30 9h2v1h-2zM33 9h1v1h-1zM38 9h1v1h-1zM40 9h3v1h-3zM46 9h1v1h-1zM52 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h1v1h-1zM44 10h1v1h-1zM46 10h7v1h-7zM14 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM21 11h1v1h-1zM26 11h1v1h-1zM30 11h2v1h-2zM34 11h4v1h-4zM39 11h1v1h-1zM41 11h1v1h-1zM43 11h1v1h-1zM4 12h5v1h-5zM10 12h4v1h-4zM17 12h1v1h-1zM19 12h2v1h-2zM22 12h3v1h-3zM26 12h5v1h-5zM33 12h2v1h-2zM37 12h1v1h-1zM40 12h2v1h-2zM44 12h2v1h-2zM47 12h1v1h-1zM49 12h1v1h-1zM51 12h1v1h-1zM4 13h3v1h-3zM9 13h1v1h-1zM11 13h1v1h-1zM14 13h2v1h-2zM18 13h2v1h-2zM21 13h1v1h-1zM25 13h1v1h-1zM31 13h1v1h-1zM34 13h2v1h-2zM37 13h1v1h-1zM39 13h2v1h-2zM43 13h1v1h-1zM46 13h4v1h-4zM4 14h4v1h-4zM10 14h6v1h-6zM19 14h1v1h-1zM22 14h1v1h-1zM25 14h1v1h-1zM27 14h5v1h-5zM33 14h1v1h-1zM35 14h1v1h-1zM37 14h7v1h-7zM45 14h1v1h-1zM49 14h4v1h-4zM4 15h1v1h-1zM7 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM15 15h1v1h-1zM19 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM32 15h8v1h-8zM43 15h1v1h-1zM46 15h4v1h-4zM51 15h1v1h-1zM6 16h2v1h-2zM9 16h2v1h-2zM15 16h1v1h-1zM20 16h1v1h-1zM22 16h2v1h-2zM26 16h1v1h-1zM28 16h1v1h-1zM31 16h1v1h-1zM37 16h1v1h-1zM39 16h2v1h-2zM42 16h3v1h-3zM50 16h1v1h-1zM52 16h1v1h-1zM4 17h4v1h-4zM11 17h3v1h-3zM17 17h3v1h-3zM21 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM28 17h2v1h-2zM34 17h2v1h-2zM37 17h1v1h-1zM46 17h2v1h-2zM49 17h3v1h-3zM4 18h1v1h-1zM6 18h7v1h-7zM14 18h2v1h-2zM17 18h1v1h-1zM19 18h2v1h-2zM22 18h4v1h-4zM29 18h1v1h-1zM31 18h1v1h-1zM36 18h1v1h-1zM38 18h2v1h-2zM42 18h2v1h-2zM45 18h1v1h-1zM49 18h1v1h-1zM52 18h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM12 19h1v1h-1zM14 19h2v1h-2zM17 19h1v1h-1zM19 19h7v1h-7zM27 19h1v1h-1zM30 19h7v1h-7zM38 19h2v1h-2zM45 19h5v1h-5zM52 19h1v1h-1zM6 20h1v1h-1zM8 20h7v1h-7zM17 20h1v1h-1zM20 20h5v1h-5zM26 20h1v1h-1zM28 20h2v1h-2zM31 20h1v1h-1zM33 20h1v1h-1zM37 20h2v1h-2zM40 20h3v1h-3zM44 20h4v1h-4zM49 20h2v1h-2zM52 20h1v1h-1zM4 21h3v1h-3zM8 21h2v1h-2zM11 21h3v1h-3zM15 21h2v1h-2zM18 21h2v1h-2zM25 21h5v1h-5zM32 21h3v1h-3zM36 21h2v1h-2zM40 21h1v1h-1zM43 21h1v1h-1zM46 21h2v1h-2zM49 21h1v1h-1zM51 21h1v1h-1zM5 22h4v1h-4zM10 22h2v1h-2zM13 22h1v1h-1zM17 22h1v1h-1zM22 22h2v1h-2zM25 22h1v1h-1zM30 22h1v1h-1zM32 22h1v1h-1zM34 22h1v1h-1zM38 22h1v1h-1zM40 22h4v1h-4zM45 22h1v1h-1zM47 22h1v1h-1zM49 22h1v1h-1zM51 22h2v1h-2zM5 23h2v1h-2zM9 23h1v1h-1zM12 23h2v1h-2zM15 23h1v1h-1zM19 23h1v1h-1zM22 23h1v1h-1zM24 23h1v1h-1zM27 23h1v1h-1zM29 23h1v1h-1zM31 23h3v1h-3zM35 23h3v1h-3zM41 23h3v1h-3zM45 23h5v1h-5zM51 23h2v1h-2zM5 24h1v1h-1zM9 24h2v1h-2zM15 24h1v1h-1zM17 24h1v1h-1zM19 24h2v1h-2zM22 24h1v1h-1zM25 24h2v1h-2zM28 24h3v1h-3zM33 24h2v1h-2zM37 24h1v1h-1zM40 24h1v1h-1zM42 24h1v1h-1zM44 24h1v1h-1zM50 24h1v1h-1zM4 25h1v1h-1zM7 25h1v1h-1zM9 25h1v1h-1zM13 25h1v1h-1zM19 25h1v1h-1zM21 25h1v1h-1zM23 25h1v1h-1zM25 25h2v1h-2zM28 25h2v1h-2zM31 25h5v1h-5zM37 25h1v1h-1zM41 25h1v1h-1zM43 25h1v1h-1zM46 25h2v1h-2zM49 25h1v1h-1zM51 25h1v1h-1zM4 26h1v1h-1zM6 26h7v1h-7zM14 26h1v1h-1zM16 26h1v1h-1zM19 26h4v1h-4zM25 26h6v1h-6zM38 26h1v1h-1zM40 26h1v1h-1zM42 26h1v1h-1zM44 26h6v1h-6zM52 26h1v1h-1zM4 27h2v1h-2zM8 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM16 27h2v1h-2zM19 27h2v1h-2zM22 27h2v1h-2zM25 27h2v1h-2zM30 27h2v1h-2zM33 27h1v1h-1zM35 27h1v1h-1zM37 27h1v1h-1zM39 27h1v1h-1zM43 27h2v1h-2zM48 27h1v1h-1zM52 27h1v1h-1zM7 28h2v1h-2zM10 28h1v1h-1zM12 28h1v1h-1zM16 28h2v1h-2zM20 28h7v1h-7zM28 28h1v1h-1zM30 28h1v1h-1zM33 28h3v1h-3zM37 28h1v1h-1zM40 28h1v1h-1zM43 28h2v1h-2zM46 28h1v1h-1zM48 28h2v1h-2zM52 28h1v1h-1zM4 29h2v1h-2zM8 29h1v1h-1zM12 29h4v1h-4zM18 29h2v1h-2zM26 29h1v1h-1zM30 29h1v1h-1zM33 29h2v1h-2zM36 29h2v1h-2zM40 29h1v1h-1zM43 29h2v1h-2zM48 29h2v1h-2zM8 30h10v1h-10zM19 30h1v1h-1zM21 30h12v1h-12zM34 30h1v1h-1zM38 30h5v1h-5zM44 30h5v1h-5zM51 30h2v1h-2zM5 31h1v1h-1zM9 31h1v1h-1zM11 31h3v1h-3zM18 31h2v1h-2zM21 31h1v1h-1zM25 31h2v1h-2zM32 31h1v1h-1zM34 31h1v1h-1zM36 31h2v1h-2zM41 31h1v1h-1zM45 31h1v1h-1zM49 31h1v1h-1zM52 31h1v1h-1zM7 32h1v1h-1zM10 32h1v1h-1zM14 32h1v1h-1zM16 32h2v1h-2zM19 32h2v1h-2zM22 32h1v1h-1zM27 32h3v1h-3zM31 32h1v1h-1zM35 32h1v1h-1zM39 32h5v1h-5zM46 32h1v1h-1zM48 32h1v1h-1zM50 32h2v1h-2zM4 33h1v1h-1zM6 33h1v1h-1zM11 33h1v1h-1zM16 33h1v1h-1zM19 33h1v1h-1zM21 33h1v1h-1zM23 33h1v1h-1zM25 33h1v1h-1zM27 33h3v1h-3zM31 33h1v1h-1zM34 33h2v1h-2zM37 33h1v1h-1zM39 33h1v1h-1zM41 33h1v1h-1zM43 33h1v1h-1zM47 33h1v1h-1zM49 33h1v1h-1zM51 33h1v1h-1zM9 34h2v1h-2zM16 34h1v1h-1zM18 34h4v1h-4zM23 34h1v1h-1zM26 34h4v1h-4zM33 34h1v1h-1zM38 34h1v1h-1zM40 34h1v1h-1zM42 34h3v1h-3zM46 34h1v1h-1zM49 34h2v1h-2zM52 34h1v1h-1zM5 35h1v1h-1zM9 35h1v1h-1zM12 35h1v1h-1zM16 35h2v1h-2zM19 35h3v1h-3zM25 35h1v1h-1zM27 35h2v1h-2zM30 35h2v1h-2zM34 35h1v1h-1zM37 35h1v1h-1zM39 35h1v1h-1zM45 35h1v1h-1zM47 35h2v1h-2zM52 35h1v1h-1zM4 36h1v1h-1zM6 36h5v1h-5zM17 36h1v1h-1zM19 36h6v1h-6zM27 36h1v1h-1zM29 36h2v1h-2zM33 36h3v1h-3zM37 36h1v1h-1zM40 36h4v1h-4zM47 36h2v1h-2zM50 36h1v1h-1zM52 36h1v1h-1zM4 37h1v1h-1zM8 37h1v1h-1zM11 37h3v1h-3zM17 37h3v1h-3zM25 37h2v1h-2zM28 37h3v1h-3zM32 37h3v1h-3zM36 37h2v1h-2zM39 37h2v1h-2zM43 37h1v1h-1zM45 37h2v1h-2zM49 37h1v1h-1zM6 38h1v1h-1zM8 38h1v1h-1zM10 38h1v1h-1zM12 38h1v1h-1zM16 38h1v1h-1zM20 38h1v1h-1zM22 38h1v1h-1zM24 38h6v1h-6zM31 38h1v1h-1zM33 38h2v1h-2zM38 38h7v1h-7zM46 38h1v1h-1zM48 38h2v1h-2zM51 38h2v1h-2zM5 39h3v1h-3zM12 39h1v1h-1zM14 39h4v1h-4zM20 39h1v1h-1zM22 39h2v1h-2zM25 39h1v1h-1zM27 39h1v1h-1zM32 39h3v1h-3zM36 39h2v1h-2zM41 39h2v1h-2zM45 39h1v1h-1zM49 39h1v1h-1zM51 39h1v1h-1zM10 40h1v1h-1zM14 40h1v1h-1zM16 40h1v1h-1zM19 40h2v1h-2zM22 40h1v1h-1zM28 40h2v1h-2zM31 40h1v1h-1zM33 40h3v1h-3zM38 40h6v1h-6zM46 40h1v1h-1zM48 40h1v1h-1zM50 40h3v1h-3zM9 41h1v1h-1zM11 41h5v1h-5zM17 41h3v1h-3zM21 41h1v1h-1zM23 41h1v1h-1zM25 41h5v1h-5zM33 41h2v1h-2zM36 41h2v1h-2zM41 41h1v1h-1zM43 41h1v1h-1zM46 41h2v1h-2zM51 41h1v1h-1zM5 42h1v1h-1zM9 42h2v1h-2zM20 42h1v1h-1zM22 42h1v1h-1zM24 42h1v1h-1zM26 42h1v1h-1zM32 42h1v1h-1zM35 42h1v1h-1zM38 42h1v1h-1zM40 42h5v1h-5zM46 42h1v1h-1zM48 42h1v1h-1zM52 42h1v1h-1zM5 43h3v1h-3zM11 43h5v1h-5zM17 43h3v1h-3zM21 43h3v1h-3zM25 43h1v1h-1zM27 43h1v1h-1zM29 43h3v1h-3zM33 43h4v1h-4zM39 43h1v1h-1zM42 43h1v1h-1zM45 43h1v1h-1zM51 43h1v1h-1zM4 44h3v1h-3zM10 44h2v1h-2zM14 44h1v1h-1zM19 44h4v1h-4zM24 44h7v1h-7zM33 44h2v1h-2zM40 44h2v1h-2zM43 44h9v1h-9zM12 45h5v1h-5zM18 45h1v1h-1zM23 45h1v1h-1zM25 45h2v1h-2zM30 45h1v1h-1zM33 45h2v1h-2zM37 45h1v1h-1zM43 45h2v1h-2zM48 45h2v1h-2zM4 46h7v1h-7zM12 46h6v1h-6zM21 46h2v1h-2zM26 46h1v1h-1zM28 46h1v1h-1zM30 46h5v1h-5zM38 46h7v1h-7zM46 46h1v1h-1zM48 46h1v1h-1zM51 46h2v1h-2zM4 47h1v1h-1zM10 47h1v1h-1zM14 47h4v1h-4zM19 47h1v1h-1zM21 47h3v1h-3zM25 47h2v1h-2zM30 47h3v1h-3zM34 47h3v1h-3zM41 47h1v1h-1zM43 47h2v1h-2zM48 47h2v1h-2zM4 48h1v1h-1zM6 48h3v1h-3zM10 48h1v1h-1zM12 48h1v1h-1zM14 48h1v1h-1zM16 48h1v1h-1zM20 48h1v1h-1zM22 48h2v1h-2zM26 48h6v1h-6zM33 48h1v1h-1zM37 48h4v1h-4zM42 48h7v1h-7zM50 48h2v1h-2zM4 49h1v1h-1zM6 49h3v1h-3zM10 49h1v1h-1zM12 49h1v1h-1zM16 49h4v1h-4zM21 49h1v1h-1zM23 49h1v1h-1zM25 49h1v1h-1zM29 49h2v1h-2zM32 49h6v1h-6zM44 49h1v1h-1zM46 49h4v1h-4zM51 49h1v1h-1zM4 50h1v1h-1zM6 50h3v1h-3zM10 50h1v1h-1zM12 50h3v1h-3zM19 50h1v1h-1zM22 50h1v1h-1zM25 50h1v1h-1zM28 50h1v1h-1zM31 50h1v1h-1zM38 50h2v1h-2zM42 50h2v1h-2zM45 50h1v1h-1zM49 50h2v1h-2zM4 51h1v1h-1zM10 51h1v1h-1zM12 51h1v1h-1zM14 51h3v1h-3zM19 51h1v1h-1zM21 51h1v1h-1zM23 51h2v1h-2zM26 51h1v1h-1zM28 51h2v1h-2zM31 51h1v1h-1zM34 51h6v1h-6zM42 51h2v1h-2zM46 51h1v1h-1zM52 51h1v1h-1zM4 52h7v1h-7zM12 52h3v1h-3zM16 52h2v1h-2zM19 52h4v1h-4zM24 52h1v1h-1zM27 52h2v1h-2zM37 52h1v1h-1zM40 52h1v1h-1zM45 52h1v1h-1zM49 52h4v1h-4z"},{"label":"any","code":"00020101021126580014br.gov.bcb.pix013636aa9036-b5cc-46a3-9ee4-88208bccdf395204000053039865802BR5922MAURICIO BARROS WOLNEY6008SALVADOR62070503***6304440D","n":45,"qr":"M4 4h7v1h-7zM13 4h2v1h-2zM17 4h3v1h-3zM21 4h1v1h-1zM25 4h1v1h-1zM29 4h1v1h-1zM31 4h7v1h-7zM40 4h1v1h-1zM42 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h2v1h-2zM15 5h1v1h-1zM20 5h1v1h-1zM24 5h1v1h-1zM27 5h2v1h-2zM30 5h1v1h-1zM39 5h1v1h-1zM42 5h1v1h-1zM48 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM13 6h1v1h-1zM16 6h4v1h-4zM21 6h2v1h-2zM27 6h5v1h-5zM33 6h1v1h-1zM37 6h1v1h-1zM39 6h1v1h-1zM42 6h1v1h-1zM44 6h3v1h-3zM48 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM12 7h1v1h-1zM14 7h4v1h-4zM19 7h7v1h-7zM27 7h2v1h-2zM33 7h1v1h-1zM35 7h1v1h-1zM37 7h1v1h-1zM39 7h2v1h-2zM42 7h1v1h-1zM44 7h3v1h-3zM48 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM18 8h1v1h-1zM24 8h6v1h-6zM32 8h1v1h-1zM34 8h2v1h-2zM38 8h3v1h-3zM42 8h1v1h-1zM44 8h3v1h-3zM48 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h2v1h-2zM16 9h1v1h-1zM19 9h2v1h-2zM22 9h1v1h-1zM24 9h1v1h-1zM28 9h1v1h-1zM32 9h1v1h-1zM36 9h1v1h-1zM42 9h1v1h-1zM48 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM38 10h1v1h-1zM40 10h1v1h-1zM42 10h7v1h-7zM13 11h1v1h-1zM16 11h1v1h-1zM19 11h1v1h-1zM22 11h3v1h-3zM28 11h1v1h-1zM32 11h1v1h-1zM34 11h1v1h-1zM36 11h2v1h-2zM39 11h2v1h-2zM4 12h5v1h-5zM10 12h5v1h-5zM16 12h1v1h-1zM20 12h1v1h-1zM22 12h1v1h-1zM24 12h6v1h-6zM31 12h1v1h-1zM35 12h1v1h-1zM39 12h1v1h-1zM41 12h1v1h-1zM43 12h1v1h-1zM45 12h1v1h-1zM47 12h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM11 13h9v1h-9zM21 13h1v1h-1zM23 13h3v1h-3zM28 13h2v1h-2zM32 13h1v1h-1zM34 13h1v1h-1zM36 13h2v1h-2zM40 13h1v1h-1zM46 13h3v1h-3zM4 14h1v1h-1zM7 14h6v1h-6zM15 14h2v1h-2zM19 14h6v1h-6zM26 14h3v1h-3zM30 14h2v1h-2zM38 14h1v1h-1zM40 14h4v1h-4zM46 14h1v1h-1zM4 15h4v1h-4zM12 15h7v1h-7zM21 15h2v1h-2zM27 15h1v1h-1zM29 15h3v1h-3zM34 15h1v1h-1zM37 15h2v1h-2zM40 15h2v1h-2zM44 15h1v1h-1zM46 15h1v1h-1zM4 16h1v1h-1zM7 16h1v1h-1zM9 16h3v1h-3zM16 16h2v1h-2zM19 16h4v1h-4zM24 16h3v1h-3zM28 16h1v1h-1zM30 16h1v1h-1zM34 16h2v1h-2zM39 16h1v1h-1zM42 16h2v1h-2zM45 16h1v1h-1zM4 17h3v1h-3zM8 17h2v1h-2zM11 17h1v1h-1zM14 17h3v1h-3zM18 17h1v1h-1zM23 17h1v1h-1zM26 17h2v1h-2zM29 17h1v1h-1zM32 17h6v1h-6zM40 17h1v1h-1zM43 17h1v1h-1zM46 17h3v1h-3zM4 18h1v1h-1zM7 18h1v1h-1zM9 18h2v1h-2zM16 18h2v1h-2zM19 18h1v1h-1zM21 18h2v1h-2zM24 18h2v1h-2zM28 18h1v1h-1zM34 18h1v1h-1zM38 18h1v1h-1zM41 18h4v1h-4zM4 19h1v1h-1zM6 19h3v1h-3zM12 19h1v1h-1zM16 19h1v1h-1zM19 19h3v1h-3zM32 19h2v1h-2zM36 19h1v1h-1zM40 19h1v1h-1zM44 19h1v1h-1zM46 19h1v1h-1zM4 20h1v1h-1zM6 20h2v1h-2zM9 20h3v1h-3zM14 20h1v1h-1zM16 20h1v1h-1zM20 20h1v1h-1zM22 20h3v1h-3zM28 20h2v1h-2zM31 20h1v1h-1zM35 20h1v1h-1zM37 20h1v1h-1zM39 20h1v1h-1zM41 20h1v1h-1zM43 20h1v1h-1zM45 20h1v1h-1zM4 21h4v1h-4zM9 21h1v1h-1zM11 21h1v1h-1zM16 21h4v1h-4zM21 21h1v1h-1zM25 21h1v1h-1zM27 21h2v1h-2zM31 21h4v1h-4zM36 21h1v1h-1zM40 21h1v1h-1zM43 21h2v1h-2zM46 21h3v1h-3zM4 22h4v1h-4zM10 22h1v1h-1zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h6v1h-6zM26 22h5v1h-5zM33 22h1v1h-1zM35 22h4v1h-4zM40 22h4v1h-4zM46 22h1v1h-1zM7 23h1v1h-1zM9 23h1v1h-1zM13 23h2v1h-2zM19 23h4v1h-4zM25 23h1v1h-1zM28 23h2v1h-2zM34 23h1v1h-1zM37 23h1v1h-1zM40 23h2v1h-2zM44 23h1v1h-1zM46 23h1v1h-1zM5 24h2v1h-2zM8 24h8v1h-8zM17 24h1v1h-1zM20 24h1v1h-1zM22 24h1v1h-1zM24 24h6v1h-6zM35 24h1v1h-1zM37 24h9v1h-9zM6 25h1v1h-1zM8 25h1v1h-1zM12 25h2v1h-2zM15 25h2v1h-2zM18 25h2v1h-2zM21 25h1v1h-1zM23 25h2v1h-2zM28 25h2v1h-2zM31 25h1v1h-1zM33 25h3v1h-3zM37 25h1v1h-1zM40 25h1v1h-1zM44 25h1v1h-1zM46 25h3v1h-3zM7 26h2v1h-2zM10 26h1v1h-1zM12 26h1v1h-1zM17 26h1v1h-1zM19 26h1v1h-1zM22 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h2v1h-2zM31 26h1v1h-1zM34 26h1v1h-1zM36 26h1v1h-1zM38 26h3v1h-3zM42 26h1v1h-1zM44 26h1v1h-1zM46 26h1v1h-1zM4 27h1v1h-1zM6 27h3v1h-3zM12 27h1v1h-1zM15 27h1v1h-1zM19 27h1v1h-1zM22 27h1v1h-1zM24 27h1v1h-1zM28 27h1v1h-1zM30 27h1v1h-1zM32 27h1v1h-1zM34 27h1v1h-1zM36 27h2v1h-2zM40 27h1v1h-1zM44 27h1v1h-1zM46 27h1v1h-1zM4 28h3v1h-3zM8 28h5v1h-5zM14 28h3v1h-3zM19 28h2v1h-2zM22 28h8v1h-8zM31 28h1v1h-1zM34 28h1v1h-1zM37 28h2v1h-2zM40 28h6v1h-6zM6 29h1v1h-1zM8 29h1v1h-1zM12 29h2v1h-2zM16 29h4v1h-4zM21 29h1v1h-1zM23 29h1v1h-1zM25 29h2v1h-2zM32 29h3v1h-3zM36 29h1v1h-1zM39 29h3v1h-3zM43 29h1v1h-1zM45 29h4v1h-4zM5 30h3v1h-3zM10 30h3v1h-3zM14 30h4v1h-4zM19 30h4v1h-4zM24 30h1v1h-1zM29 30h3v1h-3zM35 30h1v1h-1zM38 30h1v1h-1zM45 30h2v1h-2zM6 31h1v1h-1zM8 31h2v1h-2zM11 31h2v1h-2zM14 31h1v1h-1zM16 31h1v1h-1zM18 31h3v1h-3zM22 31h1v1h-1zM25 31h4v1h-4zM30 31h3v1h-3zM34 31h1v1h-1zM37 31h1v1h-1zM39 31h6v1h-6zM46 31h1v1h-1zM4 32h1v1h-1zM7 32h2v1h-2zM10 32h1v1h-1zM13 32h1v1h-1zM15 32h1v1h-1zM20 32h1v1h-1zM22 32h1v1h-1zM24 32h1v1h-1zM27 32h3v1h-3zM31 32h1v1h-1zM33 32h3v1h-3zM37 32h2v1h-2zM40 32h1v1h-1zM44 32h2v1h-2zM4 33h2v1h-2zM9 33h1v1h-1zM11 33h3v1h-3zM16 33h4v1h-4zM24 33h2v1h-2zM27 33h1v1h-1zM32 33h3v1h-3zM36 33h1v1h-1zM40 33h1v1h-1zM42 33h2v1h-2zM46 33h3v1h-3zM4 34h1v1h-1zM7 34h2v1h-2zM10 34h3v1h-3zM17 34h1v1h-1zM19 34h4v1h-4zM24 34h1v1h-1zM26 34h2v1h-2zM29 34h3v1h-3zM33 34h2v1h-2zM37 34h1v1h-1zM39 34h2v1h-2zM43 34h1v1h-1zM45 34h2v1h-2zM8 35h2v1h-2zM11 35h1v1h-1zM13 35h1v1h-1zM16 35h1v1h-1zM19 35h1v1h-1zM21 35h4v1h-4zM28 35h1v1h-1zM32 35h1v1h-1zM35 35h3v1h-3zM41 35h3v1h-3zM46 35h1v1h-1zM7 36h2v1h-2zM10 36h2v1h-2zM16 36h1v1h-1zM19 36h2v1h-2zM22 36h2v1h-2zM25 36h1v1h-1zM28 36h1v1h-1zM31 36h1v1h-1zM33 36h3v1h-3zM37 36h2v1h-2zM40 36h1v1h-1zM42 36h1v1h-1zM44 36h2v1h-2zM47 36h1v1h-1zM11 37h1v1h-1zM13 37h1v1h-1zM15 37h1v1h-1zM17 37h3v1h-3zM21 37h1v1h-1zM23 37h2v1h-2zM26 37h1v1h-1zM28 37h1v1h-1zM33 37h5v1h-5zM39 37h2v1h-2zM43 37h1v1h-1zM46 37h3v1h-3zM8 38h1v1h-1zM10 38h2v1h-2zM13 38h1v1h-1zM19 38h3v1h-3zM25 38h1v1h-1zM29 38h3v1h-3zM33 38h1v1h-1zM35 38h4v1h-4zM44 38h2v1h-2zM5 39h4v1h-4zM11 39h3v1h-3zM15 39h1v1h-1zM17 39h8v1h-8zM28 39h2v1h-2zM34 39h2v1h-2zM38 39h6v1h-6zM46 39h1v1h-1zM4 40h1v1h-1zM7 40h2v1h-2zM10 40h2v1h-2zM13 40h3v1h-3zM20 40h1v1h-1zM22 40h1v1h-1zM24 40h5v1h-5zM30 40h1v1h-1zM35 40h1v1h-1zM40 40h6v1h-6zM48 40h1v1h-1zM12 41h2v1h-2zM16 41h4v1h-4zM21 41h1v1h-1zM24 41h1v1h-1zM28 41h1v1h-1zM32 41h4v1h-4zM39 41h2v1h-2zM44 41h1v1h-1zM46 41h3v1h-3zM4 42h7v1h-7zM12 42h5v1h-5zM19 42h1v1h-1zM22 42h1v1h-1zM24 42h1v1h-1zM26 42h1v1h-1zM28 42h3v1h-3zM32 42h4v1h-4zM37 42h1v1h-1zM40 42h1v1h-1zM42 42h1v1h-1zM44 42h1v1h-1zM46 42h1v1h-1zM4 43h1v1h-1zM10 43h1v1h-1zM15 43h2v1h-2zM19 43h2v1h-2zM22 43h3v1h-3zM28 43h1v1h-1zM32 43h1v1h-1zM36 43h1v1h-1zM38 43h3v1h-3zM44 43h1v1h-1zM46 43h1v1h-1zM4 44h1v1h-1zM6 44h3v1h-3zM10 44h1v1h-1zM12 44h2v1h-2zM16 44h2v1h-2zM19 44h2v1h-2zM22 44h1v1h-1zM24 44h8v1h-8zM34 44h2v1h-2zM37 44h2v1h-2zM40 44h6v1h-6zM4 45h1v1h-1zM6 45h3v1h-3zM10 45h1v1h-1zM12 45h1v1h-1zM16 45h1v1h-1zM19 45h1v1h-1zM21 45h1v1h-1zM31 45h1v1h-1zM34 45h3v1h-3zM39 45h1v1h-1zM41 45h1v1h-1zM44 45h1v1h-1zM46 45h2v1h-2zM4 46h1v1h-1zM6 46h3v1h-3zM10 46h1v1h-1zM12 46h1v1h-1zM14 46h1v1h-1zM16 46h1v1h-1zM18 46h1v1h-1zM20 46h1v1h-1zM23 46h1v1h-1zM25 46h1v1h-1zM27 46h5v1h-5zM33 46h1v1h-1zM35 46h1v1h-1zM37 46h2v1h-2zM40 46h1v1h-1zM42 46h2v1h-2zM46 46h1v1h-1zM48 46h1v1h-1zM4 47h1v1h-1zM10 47h1v1h-1zM12 47h2v1h-2zM15 47h3v1h-3zM19 47h1v1h-1zM22 47h3v1h-3zM27 47h1v1h-1zM31 47h1v1h-1zM34 47h2v1h-2zM37 47h1v1h-1zM40 47h1v1h-1zM46 47h1v1h-1zM4 48h7v1h-7zM12 48h2v1h-2zM15 48h1v1h-1zM20 48h1v1h-1zM22 48h1v1h-1zM25 48h1v1h-1zM28 48h1v1h-1zM35 48h1v1h-1zM40 48h4v1h-4zM45 48h1v1h-1zM47 48h1v1h-1z"}]};
@@ -2757,6 +2799,8 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   function save(s) { A.set("eb-don", JSON.stringify(s)); }
   function both(en, pt) { return '<span class="ebd-en" lang="en">' + en + '</span><span class="ebd-pt" lang="pt-BR">' + pt + "</span>"; }
   function ding(f) { try { if (typeof tone === "function") tone(f, 0, .18, .06, 0, true); } catch (e) {} }
+  var SHARE_FIRST = 3, SHARE_EVERY = 4, SHARE_EVERY_DONE = 12, SITE = "https://www.englishbubbles.com.br/";
+  var SHARE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.8"/><circle cx="6" cy="12" r="2.8"/><circle cx="18" cy="19" r="2.8"/><path d="M8.5 13.4l7 4.2M15.5 6.4l-7 4.2"/></svg>';
   var HEART = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.6 4.5c2.1 0 3.5 1.2 4.4 2.6.9-1.4 2.3-2.6 4.4-2.6 3.6 0 5.7 3.8 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>';
 
   // ------------------------------------------------------------ the panel (R$ 5 / R$ 10 / any amount)
@@ -2871,11 +2915,85 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
   }, true);
   window.ebDonate = open;
 
+  // ------------------------------------------------------------ sharing
+  function shareState() {
+    var s = { next: SHARE_FIRST, shared: false };
+    try { var v = JSON.parse(A.get("eb-share")); if (v) for (var k in v) s[k] = v[k]; } catch (e) {}
+    return s;
+  }
+  var noteEl = null, noteT = 0;
+  function note(en, pt) {
+    if (!noteEl) {
+      noteEl = document.createElement("div"); noteEl.className = "ebd-note ebd-l";
+      noteEl.setAttribute("role", "status"); noteEl.setAttribute("aria-live", "polite");
+      document.body.appendChild(noteEl);
+    }
+    noteEl.dataset.lang = A.lang(); noteEl.innerHTML = both(en, pt);
+    noteEl.classList.add("on"); clearTimeout(noteT);
+    noteT = setTimeout(function () { noteEl.classList.remove("on"); }, 2800);
+  }
+  function copyText(s) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(s);
+    return new Promise(function (ok, no) {
+      var ta = document.createElement("textarea"); ta.value = s; ta.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+      document.body.appendChild(ta); ta.select();
+      var done = false; try { done = document.execCommand("copy"); } catch (e) {}
+      ta.remove(); if (done) ok(); else no();
+    });
+  }
+  function share(from) {
+    var pt = A.lang() === "pt", title = window.ebApp && window.ebApp.title;
+    var url = GAME === "menu" ? SITE : SITE + "games/" + GAME + ".html";
+    var text = title
+      ? (pt ? "Estou praticando inglês com o jogo “" + title + "” do English Bubbles. É grátis, experimenta:"
+            : "I'm practising English with “" + title + "” on English Bubbles. It's free, try it:")
+      : (pt ? "English Bubbles: jogos grátis para praticar inglês, sem cadastro. Funciona no celular, até sem internet."
+            : "English Bubbles: free games to practise English, no sign-up. Works on your phone, even offline.");
+    function done(how) {
+      stat("App shared", { from: from, how: how, game: GAME });
+      var s = shareState(); s.shared = true; A.set("eb-share", JSON.stringify(s));
+    }
+    ding(659.25);
+    // phones and tablets: their own share menu (WhatsApp, Instagram...); computers: copy (their share windows are clumsy)
+    if (navigator.share && matchMedia("(hover: none)").matches) {
+      navigator.share({ title: "English Bubbles", text: text, url: url }).then(function () { done("share menu"); }, function () {});
+      return;
+    }
+    copyText(text + " " + url).then(function () {
+      note("Copied! Paste it in a message to a friend.", "Copiado! Cole numa mensagem para um amigo.");
+      done("copy");
+    }, function () { window.prompt(pt ? "Copie o link:" : "Copy the link:", url); });
+  }
+  window.ebShare = share;
+
   // ------------------------------------------------------------ the menu: the pop-up and the footer link
   if (inMenu) {
     var link = document.getElementById("donlink");
     var showLink = function () { if (link) link.hidden = false; };   // always shown (2026-11-26, the user)
     if (link) link.addEventListener("click", function () { open("manual"); });
+    var sb = document.getElementById("sharebtn");
+    if (sb) sb.addEventListener("click", function () { share("menu button"); });
+    // If the chip would sit on a row by itself (narrow phones, a long game name in Continue), Continue shortens its
+    // name with "…" so both stay on one row (the chip always keeps its label: "Share" on phones, 20-hero.css).
+    var fitShare = function () {
+      var cont = document.getElementById("continue");
+      if (cont) cont.style.maxWidth = "";
+      if (!sb || !sb.offsetParent) return;
+      var prev = sb.previousElementSibling;
+      while (prev && (prev.hidden || !prev.offsetParent)) prev = prev.previousElementSibling;
+      if (!prev || prev !== cont) return;
+      if (sb.getBoundingClientRect().top >= prev.getBoundingClientRect().bottom)
+        prev.style.maxWidth = (sb.parentNode.clientWidth - sb.offsetWidth - (parseFloat(getComputedStyle(sb.parentNode).columnGap) || 0) - 1) + "px";
+    };
+    if (sb) {
+      fitShare();
+      window.addEventListener("resize", fitShare);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitShare);
+      var mo = new MutationObserver(function () { requestAnimationFrame(fitShare); });
+      mo.observe(sb.parentNode, { attributes: true, subtree: true, attributeFilter: ["hidden"] });
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-lang"] });
+      window.addEventListener("pageshow", fitShare);
+    }
     var ask = function () {
       showLink();
       var s = state(), help = document.getElementById("help");
@@ -2903,7 +3021,7 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     var old = after.parentNode.querySelector(".ebd-line");
     if (old) old.remove();
     var s = state();
-    if (n < FIRST || n < s.line) return;
+    if (n < FIRST || n < s.line) { shareLine(after, n); return; }
     s.line = n + (s.gave ? LINE_EVERY_GAVE : LINE_EVERY); save(s);
     var p = document.createElement("p");
     p.className = "ebd-line ebd-l";
@@ -2911,6 +3029,18 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     p.innerHTML = both("Enjoying English Bubbles?", "Está gostando do English Bubbles?") +
       ' <button type="button">' + HEART + both("Support it", "Apoie") + "</button>";
     p.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); open("manual"); });
+    after.parentNode.insertBefore(p, after.nextSibling);
+  }
+  function shareLine(after, n) {
+    var s = shareState();
+    if (n < SHARE_FIRST || n < s.next) return;
+    s.next = n + (s.shared ? SHARE_EVERY_DONE : SHARE_EVERY); A.set("eb-share", JSON.stringify(s));
+    var p = document.createElement("p");
+    p.className = "ebd-line ebd-share ebd-l";
+    p.dataset.lang = A.lang();
+    p.innerHTML = both("Like it?", "Gostou?") +
+      ' <button type="button">' + SHARE_ICON + both("Share it with a friend", "Compartilhe com um amigo") + "</button>";
+    p.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); share("game line"); });
     after.parentNode.insertBefore(p, after.nextSibling);
   }
   function text(root, sel) { var x = root && root.querySelector(sel); return x ? x.textContent : ""; }
@@ -2932,6 +3062,188 @@ html.ebd-open { overflow: hidden; overscroll-behavior: none; }
     if (!words.length) words = end.querySelectorAll("li");
     ended(box, "p:" + [].map.call(words, function (x) { return x.textContent.slice(0, 30); }).join("|").slice(0, 400) + text(end, ".big"));
   }).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+<script>
+/* lite.js — LIGHT MODE (2026-11-27, the user): fewer animations on devices that struggle. Runs in the menu (appended to
+   its scripts) and in every game (in the injected foot); the look is lite.css. ONE setting for the whole app, eb-lite:
+     unset / "ok"  not on: the page is checked (below); "ok" = a check found it smooth (pages are still checked)
+     "auto"        on, switched on by the check (a note says so, once)
+     "on" / "off"  chosen in Help (the menu's tour): never changed by the check again
+   THE CHECK: 3 s after a page opens (the header has landed), the frames of 4 s are timed while the page is on screen.
+   Slow = under 35 frames a second or 8+ frames over 50 ms. One slow check is not enough (a page can stutter while it
+   settles): a second check 6 s later must agree. No frames (a hidden tab) = no decision.
+   ON: html.eb-lite (lite.css), and every endlessly repeating decorative animation is paused (hints keep running) (checked every 1.5 s, as pages add
+   elements). window.ebLite = {on(), set(true / false)} for the Help switch. Visitor stats: "Light mode" {how}. */
+(function () {
+  "use strict";
+  var A = window.ebApp || {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    lang: function () { return document.documentElement.dataset.lang === "en" ? "en" : "pt"; }
+  };
+  var KEY = "eb-lite", root = document.documentElement;
+  var GAME = (location.pathname.match(/\/games\/([^\/]+)\.html$/) || [])[1] || "menu";
+  function stat(how) { try { if (window.umami && umami.track) umami.track("Light mode", { how: how, game: GAME }); } catch (e) {} }
+  function val() { return A.get(KEY) || ""; }
+  function isOn() { var v = val(); return v === "auto" || v === "on"; }
+
+  // ------------------------------------------------------------ on / off
+  // Hints keep running (small and cheap, and they tell the student something): Verb Wheel's flashing "type here" bar
+  // (blink2), the ring on a game's tutorial button (tourping), and any pulse / ping / nudge. Checked 2026-11-27: the
+  // 20 games' endless animations are float, spin, bob (decoration, paused) and those two hints.
+  var HINT = /blink|ping|pulse|nudge|hint/i;
+  var paused = [], timer = 0;
+  function calm() {
+    if (!root.classList.contains("eb-lite") || document.hidden || !document.getAnimations) return;
+    try {
+      document.getAnimations().forEach(function (a) {
+        var t = a.effect && a.effect.getTiming ? a.effect.getTiming() : null;
+        if (t && t.iterations === Infinity && a.playState === "running" && !HINT.test(a.animationName || "")) { a.pause(); paused.push(a); }
+      });
+    } catch (e) {}
+  }
+  // SOLID PANELS (2026-11-27, the user: a game's Guide was hard to read): without the blur, a see-through panel shows
+  // the game behind its text. Every element styled with a backdrop-filter (found in the page's style sheets) gets its
+  // own colour laid over the page's background colour (--bg-a) as a solid background-color, so it keeps its tint and
+  // its gradients but nothing shows through. Kept in data-ebl; redone when the colour or theme changes.
+  var glassSel = null, probe = null, mo = null, queued = 0;
+  function sels() {
+    if (glassSel) return glassSel;
+    var out = [];
+    function walk(rules) {
+      for (var i = 0; i < rules.length; i++) {
+        var r = rules[i];
+        if (r.cssRules && !r.selectorText) { try { walk(r.cssRules); } catch (e) {} continue; }
+        if (!r.style || !r.selectorText) continue;
+        var bf = r.style.getPropertyValue("backdrop-filter") || r.style.getPropertyValue("-webkit-backdrop-filter");
+        if (bf && bf !== "none" && !/eb-lite/.test(r.selectorText)) out.push(r.selectorText);
+      }
+    }
+    for (var s = 0; s < document.styleSheets.length; s++) { try { walk(document.styleSheets[s].cssRules); } catch (e) {} }
+    glassSel = out.join(",") || "";
+    return glassSel;
+  }
+  function rgba(c) {
+    var m = /rgba?\(([^)]+)\)/.exec(c || ""); if (!m) return null;
+    var p = m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  }
+  function base() {
+    if (!probe) { probe = document.createElement("i"); probe.style.cssText = "position:fixed;width:0;height:0;visibility:hidden;background:var(--bg-a)"; }
+    if (!probe.isConnected) document.body.appendChild(probe);
+    return rgba(getComputedStyle(probe).backgroundColor) || [255, 255, 255, 1];
+  }
+  function solid() {
+    queued = 0;
+    if (!root.classList.contains("eb-lite") || !document.body) return;
+    var s = sels(); if (!s) return;
+    var b = null, els;
+    try { els = document.querySelectorAll(s); } catch (e) { return; }
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.hasAttribute("data-ebl")) continue;
+      var c = rgba(getComputedStyle(el).backgroundColor);
+      el.setAttribute("data-ebl", el.style.backgroundColor || "");
+      if (!c || c[3] >= .97) continue;
+      b = b || base();
+      var a = c[3], mix = function (k) { return Math.round(c[k] * a + b[k] * (1 - a)); };
+      el.style.setProperty("background-color", "rgb(" + mix(0) + "," + mix(1) + "," + mix(2) + ")", "important");
+    }
+  }
+  function unsolid() {
+    var els = document.querySelectorAll("[data-ebl]");
+    for (var i = 0; i < els.length; i++) {
+      els[i].style.removeProperty("background-color");
+      if (els[i].getAttribute("data-ebl")) els[i].style.backgroundColor = els[i].getAttribute("data-ebl");
+      els[i].removeAttribute("data-ebl");
+    }
+  }
+  // at most one pass every 60 ms (games change classes all the time while a bubble moves)
+  function queue() { if (!queued) queued = setTimeout(solid, 60); }
+  var mo2 = null;
+  function watch(on) {
+    if (mo) { mo.disconnect(); mo2.disconnect(); mo = mo2 = null; }
+    if (!on || !window.MutationObserver) return;
+    mo = new MutationObserver(queue);           // windows opening, elements added
+    mo.observe(document.body || root, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden", "open"] });
+    mo2 = new MutationObserver(function () { unsolid(); queue(); });   // the page's colour or theme changed: all again
+    mo2.observe(root, { attributes: true, attributeFilter: ["style", "data-theme"] });
+  }
+  function apply(on) {
+    root.classList.toggle("eb-lite", on);
+    var sw = document.querySelectorAll(".lite-sw");                 // the menu's switch shows the state
+    for (var i = 0; i < sw.length; i++) sw[i].setAttribute("aria-checked", String(on));
+    clearInterval(timer);
+    if (on) {
+      calm(); timer = setInterval(calm, 1500);
+      if (document.body) solid(); else document.addEventListener("DOMContentLoaded", solid);
+      watch(true);
+    } else {
+      watch(false); unsolid();
+      paused.forEach(function (a) { try { if (a.playState === "paused") a.play(); } catch (e) {} });
+      paused = [];
+    }
+  }
+  window.ebLite = {
+    on: isOn,
+    set: function (on) { A.set(KEY, on ? "on" : "off"); apply(on); stat(on ? "switched on" : "switched off"); }
+  };
+
+  // ------------------------------------------------------------ the note (once, when the check switches it on)
+  function note() {
+    var n = document.createElement("div");
+    n.className = "ebl-note"; n.setAttribute("role", "status"); n.dataset.lang = A.lang();
+    n.innerHTML = '<span class="ebl-en" lang="en"><b>Light mode on</b>: fewer animations, so the app runs smoothly on this device. ' +
+      'To change it: the <b>?</b> button on the main menu.</span>' +
+      '<span class="ebl-pt" lang="pt-BR"><b>Modo leve ligado</b>: menos animações, para o app rodar melhor neste aparelho. ' +
+      'Para mudar: botão <b>?</b> no menu inicial.</span>';
+    document.body.appendChild(n);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { n.classList.add("on"); }); });
+    setTimeout(function () { n.classList.remove("on"); setTimeout(function () { n.remove(); }, 400); }, 7000);
+  }
+
+  // ------------------------------------------------------------ the check
+  function measure(ms, done) {
+    var prev = 0, frames = 0, long = 0, span = 0, t0 = 0;
+    function tick(t) {
+      if (document.hidden) { prev = 0; requestAnimationFrame(tick); return; }
+      if (prev) {
+        var d = t - prev;
+        if (d < 300) { frames++; span += d; if (d > 50) long++; }   // longer gaps: the page was paused, not slow
+      }
+      prev = t;
+      if (!t0) t0 = t;
+      if (span >= ms) { done(frames / (span / 1000), long); return; }
+      if (t - t0 > ms * 6) { done(null, 0); return; }      // hardly any frames (hidden tab, preview): no decision
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function slow(fps, long) { return fps !== null && (fps < 35 || long >= 8); }
+  function check() {
+    var v = val();
+    if (v === "auto" || v === "on" || v === "off") return;
+    setTimeout(function () {
+      measure(4000, function (fps, long) {
+        if (fps === null) return;
+        if (!slow(fps, long)) { A.set(KEY, "ok"); return; }
+        setTimeout(function () {
+          measure(4000, function (fps2, long2) {
+            var now = val();
+            if (fps2 === null || now === "on" || now === "off") return;
+            if (!slow(fps2, long2)) { A.set(KEY, "ok"); return; }
+            A.set(KEY, "auto"); apply(true); note(); stat("auto");
+          });
+        }, 6000);
+      });
+    }, 3000);
+  }
+
+  apply(isOn());
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) calm(); });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) apply(isOn()); });
+  if (!window.matchMedia || !matchMedia("(prefers-reduced-motion: reduce)").matches) check();   // reduced motion: already calm
 })();
 </script>
 
